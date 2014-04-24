@@ -16,6 +16,11 @@
             "name": "showbee",
             "type": "boolean",
             "initialValue":"true"
+        },
+        {
+            "name": "beeAnimated",
+            "type": "boolean",
+            "initialValue":"false"
         }]
     }]
 }
