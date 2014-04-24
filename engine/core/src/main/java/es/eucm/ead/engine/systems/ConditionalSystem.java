@@ -79,17 +79,28 @@ public abstract class ConditionalSystem extends IteratingSystem {
 	 *            The condition to be evaluated
 	 * @param owner
 	 *            The entity that contains the condition. Can be null.
+	 * @param otherEntity
+	 *            Other entity that can be used for context. Can be null.
 	 * @return The results of evaluating {@code condition} or
 	 *         {@link #getDefaultValueForCondition()} if it is null or there's
 	 *         no {@code VariablesSystem} registered.
 	 */
-	protected boolean evaluateCondition(String expression, Entity owner) {
+	protected boolean evaluateCondition(String expression, Entity owner,
+			Entity otherEntity) {
 		try {
 			return variablesSystem.evaluateCondition(expression, owner,
-					getDefaultValueForCondition());
+					otherEntity, getDefaultValueForCondition());
 		} catch (IllegalArgumentException e) {
 			return getDefaultValueForCondition();
 		}
+	}
+
+	/**
+	 * Equivalent to {@link #evaluateCondition(String, Entity, Entity)} where
+	 * {@code otherEntity} is null.
+	 */
+	protected boolean evaluateCondition(String expression, Entity owner) {
+		return evaluateCondition(expression, owner, null);
 	}
 
 	/**
