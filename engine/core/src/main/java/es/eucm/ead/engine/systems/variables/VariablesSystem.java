@@ -64,6 +64,11 @@ public class VariablesSystem extends EntitySystem {
 	 */
 	public static final String THIS = "this";
 
+	/**
+	 * Also reserved word for referring to "another" entity
+	 */
+	public static final String OTHER_ENTITY = "entity";
+
 	private Array<VariableListener> listeners;
 
 	private VarsContext varsContext;
@@ -84,27 +89,29 @@ public class VariablesSystem extends EntitySystem {
 	}
 
 	/**
-	 * Updates the context with the given "$this" entity.
+	 * Updates the context with the given reserved variable entity (
+	 * {@link #THIS} or {@link #OTHER_ENTITY}).
 	 * 
 	 * @param dis
-	 *            New context. If {@code null}, nothing is done
+	 *            New entity context. If {@code null}, nothing is done
 	 */
-	private void setThisVariable(Entity dis) {
+	private void setReservedVariable(String varName, Entity dis) {
 		if (dis == null)
 			return;
-		if (!varsContext.hasVariable(THIS)) {
-			varsContext.registerVariable(THIS, dis, Entity.class);
+		if (!varsContext.hasVariable(varName)) {
+			varsContext.registerVariable(varName, dis, Entity.class);
 		} else {
-			varsContext.setValue(THIS, dis);
+			varsContext.setValue(varName, dis);
 		}
 	}
 
 	/**
-	 * Clears entity context once it is not accessible
+	 * Clears entity context once it is not accessible. {@code varName} must be
+	 * either {@link #OTHER_ENTITY} or {@link #THIS}.
 	 */
-	private void clearThisVariable() {
-		if (varsContext.hasVariable(THIS)) {
-			varsContext.setValue(THIS, null);
+	private void clearReservedVariable(String varName) {
+		if (varsContext.hasVariable(varName)) {
+			varsContext.setValue(varName, null);
 		}
 	}
 
@@ -130,6 +137,15 @@ public class VariablesSystem extends EntitySystem {
 	}
 
 	/**
+	 * Equivalent to {@link #setValue(String, String, Entity, Entity)} where
+	 * {@code otherEntity} is set to {@code null}. Convenient as most of the
+	 * times {@code otherEntity} is not needed.
+	 */
+	public void setValue(String variable, String expression, Entity dis) {
+		setValue(variable, expression, dis, null);
+	}
+
+	/**
 	 * Evaluates the given {@code expression} and assigns the resulting value to
 	 * the given {@code variable}.
 	 * 
@@ -141,10 +157,15 @@ public class VariablesSystem extends EntitySystem {
 	 *            The entity that owns the expression (can be {@code null}).
 	 *            Passing a not {@code null} entity allows the expression to
 	 *            resolve entity's properties (e.g. a given tag).
+	 * @param otherEntity
+	 *            An additional entity to be added to the context. Can be
+	 *            {@code null}. Useful for expressions where it is necessary to
+	 *            access other entities' properties beyond the owner.
 	 */
-	public void setValue(String variable, String expression, Entity dis) {
+	public void setValue(String variable, String expression, Entity dis,
+			Entity otherEntity) {
 		if (variable != null) {
-			Object value = evaluateExpression(expression, dis);
+			Object value = evaluateExpression(expression, dis, otherEntity);
 			if (value != null) {
 				Object oldValue = varsContext.getValue(variable);
 				if (!value.equals(oldValue)) {
@@ -166,6 +187,15 @@ public class VariablesSystem extends EntitySystem {
 	}
 
 	/**
+	 * Equivalent to {@link #evaluateExpression(String, Entity, Entity)} where
+	 * {@code otherEntity} is set to {@code null}. Convenient as most of the
+	 * times {@code otherEntity} is not needed.
+	 */
+	public Object evaluateExpression(String expression, Entity dis) {
+		return evaluateExpression(expression, dis, null);
+	}
+
+	/**
 	 * Schedules an anonymous expression for evaluation on the next
 	 * {@link #update(float)}.
 	 * 
@@ -177,8 +207,13 @@ public class VariablesSystem extends EntitySystem {
 	 *            Passing a not {@code null} entity allows the expression to
 	 *            resolve entity's properties (e.g. a given tag) by referring to
 	 *            reserved variable "$this".
+	 * @param otherEntity
+	 *            An additional entity to be added to the context. Can be
+	 *            {@code null}. Useful for expressions where it is necessary to
+	 *            access other entities' properties beyond the owner.
 	 */
-	public Object evaluateExpression(String expression, Entity dis) {
+	public Object evaluateExpression(String expression, Entity dis,
+			Entity otherEntity) {
 		if (expression != null) {
 			// Variable assignation
 			Expression e = expressionMap.get(expression);
@@ -188,10 +223,12 @@ public class VariablesSystem extends EntitySystem {
 			}
 
 			try {
-				// Set reserved variable "this"
-				setThisVariable(dis);
+				// Set reserved variables "this" and "other entity"
+				setReservedVariable(THIS, dis);
+				setReservedVariable(OTHER_ENTITY, otherEntity);
 				Object value = e.evaluate(varsContext);
-				clearThisVariable();
+				clearReservedVariable(THIS);
+				clearReservedVariable(OTHER_ENTITY);
 				return value;
 			} catch (ExpressionEvaluationException e1) {
 				Gdx.app.error("VariablesSystem", "Error evaluating "
@@ -207,6 +244,16 @@ public class VariablesSystem extends EntitySystem {
 	}
 
 	/**
+	 * Equivalent to {@link #evaluateCondition(String, Entity, Entity, boolean)}
+	 * where {@code otherEntity} is set to {@code null}. Convenient as most of
+	 * the times {@code otherEntity} is not needed.
+	 */
+	public boolean evaluateCondition(String expression, Entity dis,
+			boolean defaultValue) {
+		return evaluateCondition(expression, dis, null, defaultValue);
+	}
+
+	/**
 	 * Convenient method for evaluating boolean expressions. Useful for checking
 	 * conditions in {@link es.eucm.ead.engine.components.ConditionedComponent}
 	 * s.
@@ -217,6 +264,10 @@ public class VariablesSystem extends EntitySystem {
 	 *            The entity that owns the expression (can be {@code null}).
 	 *            Passing a not {@code null} entity allows the expression to
 	 *            resolve the entity's properties (e.g. a given tag).
+	 * @param otherEntity
+	 *            An additional entity to be added to the context. Can be
+	 *            {@code null}. Useful for expressions where it is necessary to
+	 *            access other entities' properties beyond the owner.
 	 * @param defaultValue
 	 *            The value to be returned if the expression is null (usually
 	 *            because it was not defined in the model) or if the expression
@@ -224,11 +275,11 @@ public class VariablesSystem extends EntitySystem {
 	 * @return The result of the evaluation
 	 */
 	public boolean evaluateCondition(String expression, Entity dis,
-			boolean defaultValue) {
+			Entity otherEntity, boolean defaultValue) {
 		if (expression == null)
 			return defaultValue;
 
-		Object result = evaluateExpression(expression, dis);
+		Object result = evaluateExpression(expression, dis, otherEntity);
 
 		if (result == null)
 			return defaultValue;
