@@ -53,6 +53,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldListener;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
@@ -298,6 +299,25 @@ public abstract class BaseGallery<T extends DescriptionCard> implements
 			}
 
 		};
+		if (!selectable) {
+			this.galleryGrid.addCaptureListener(new ClickListener() {
+
+				@SuppressWarnings("unchecked")
+				@Override
+				public void clicked(InputEvent event, float x, float y) {
+					Actor target = event.getTarget();
+
+					while (!(target instanceof DescriptionCard)
+							&& target != galleryGrid) {
+						target = target.getParent();
+					}
+					if (target instanceof DescriptionCard) {
+						entityClicked(event, (T) target, controller, i18n);
+					}
+				}
+
+			});
+		}
 		this.galleryGrid.debug();
 
 		this.firstPositionActor = getFirstPositionActor(viewport, i18n, skin,
