@@ -41,6 +41,7 @@ import ashley.core.Family;
 import es.eucm.ead.engine.assets.GameAssets;
 import es.eucm.ead.engine.components.I18nTextComponent;
 import es.eucm.ead.engine.processors.CamerasProcessor;
+import es.eucm.ead.engine.processors.DisplayBoundingRectangleProcessor;
 import es.eucm.ead.engine.processors.PathProcessor;
 import es.eucm.ead.engine.processors.RefProcessor;
 import es.eucm.ead.engine.processors.TagsProcessor;
@@ -58,6 +59,7 @@ import es.eucm.ead.engine.processors.renderers.ImageProcessor;
 import es.eucm.ead.engine.processors.renderers.ShapeRendererProcessor;
 import es.eucm.ead.engine.processors.renderers.StatesProcessor;
 import es.eucm.ead.engine.processors.tweens.TweensProcessor;
+import es.eucm.ead.engine.systems.DisplayBoundingRectangleSystem;
 import es.eucm.ead.engine.systems.EffectsSystem;
 import es.eucm.ead.engine.systems.KeyPressedSystem;
 import es.eucm.ead.engine.systems.PathSystem;
@@ -97,6 +99,7 @@ import es.eucm.ead.engine.systems.tweens.tweencreators.TimelineCreator;
 import es.eucm.ead.engine.variables.VariablesManager;
 import es.eucm.ead.engine.variables.VarsContext;
 import es.eucm.ead.schema.assets.Sound;
+import es.eucm.ead.schema.components.DisplayBoundingRectangle;
 import es.eucm.ead.schema.components.PathBoundary;
 import es.eucm.ead.schema.components.RefComponent;
 import es.eucm.ead.schema.components.Tags;
@@ -174,6 +177,8 @@ public class DefaultEngineInitializer implements EngineInitializer {
 		gameLoop.addSystem(new TouchedSystem());
 		gameLoop.addSystem(new KeyPressedSystem());
 		gameLoop.addSystem(new SoundSystem(variablesManager));
+		gameLoop.addSystem(new DisplayBoundingRectangleSystem(gameLoop,
+				gameView, componentLoader));
 
 		// Register effects
 		EffectsSystem effectsSystem = new EffectsSystem(gameLoop,
@@ -296,6 +301,10 @@ public class DefaultEngineInitializer implements EngineInitializer {
 		componentLoader.registerComponentProcessor(RefRenderer.class,
 				new RefProcessor<RefRenderer>(gameLoop, gameAssets,
 						componentLoader));
+
+		componentLoader.registerComponentProcessor(
+				DisplayBoundingRectangle.class,
+				new DisplayBoundingRectangleProcessor(gameLoop));
 	}
 
 	private static class LanguageVariableListener implements
