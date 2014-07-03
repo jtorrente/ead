@@ -38,9 +38,7 @@
 package es.eucm.ead.schema.renderers;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Generated;
 
 /**
@@ -52,7 +50,7 @@ import javax.annotation.Generated;
 public class Frames extends Renderer {
 
 	private List<Frame> frames = new ArrayList<Frame>();
-	private Frames.Sequence sequence;
+	private Sequence sequence;
 
 	public List<Frame> getFrames() {
 		return frames;
@@ -62,45 +60,12 @@ public class Frames extends Renderer {
 		this.frames = frames;
 	}
 
-	public Frames.Sequence getSequence() {
+	public Sequence getSequence() {
 		return sequence;
 	}
 
-	public void setSequence(Frames.Sequence sequence) {
+	public void setSequence(Sequence sequence) {
 		this.sequence = sequence;
-	}
-
-	@Generated("org.jsonschema2pojo")
-	public static enum Sequence {
-
-		LINEAR("linear"), RANDOM("random");
-		private final String value;
-		private static Map<String, Frames.Sequence> constants = new HashMap<String, Frames.Sequence>();
-
-		static {
-			for (Frames.Sequence c : Frames.Sequence.values()) {
-				constants.put(c.value, c);
-			}
-		}
-
-		private Sequence(String value) {
-			this.value = value;
-		}
-
-		@Override
-		public String toString() {
-			return this.value;
-		}
-
-		public static Frames.Sequence fromValue(String value) {
-			Frames.Sequence constant = constants.get(value);
-			if (constant == null) {
-				throw new IllegalArgumentException(value);
-			} else {
-				return constant;
-			}
-		}
-
 	}
 
 }

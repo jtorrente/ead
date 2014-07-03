@@ -34,49 +34,43 @@
  *      You should have received a copy of the GNU Lesser General Public License
  *      along with eAdventure.  If not, see <http://www.gnu.org/licenses/>.
  */
-package es.eucm.ead.engine.processors.renderers;
 
-import es.eucm.ead.engine.ComponentLoader;
-import es.eucm.ead.engine.GameLoop;
-import es.eucm.ead.engine.assets.GameAssets;
-import es.eucm.ead.engine.components.renderers.RendererComponent;
-import es.eucm.ead.engine.components.renderers.frames.FramesComponent;
-import es.eucm.ead.engine.components.renderers.frames.sequences.LinearSequence;
-import es.eucm.ead.engine.components.renderers.frames.sequences.RandomSequence;
-import es.eucm.ead.schema.renderers.Frame;
-import es.eucm.ead.schema.renderers.Frames;
+package es.eucm.ead.schema.components;
 
-public class FramesProcessor extends RendererProcessor<Frames> {
+import javax.annotation.Generated;
 
-	private ComponentLoader componentLoader;
+/**
+ * Makes the visibility of the parent entity depend on a given condition. When
+ * the condition is evaluated to true, the entity will be shown in screen and
+ * touchable.
+ * 
+ */
+@Generated("org.jsonschema2pojo")
+public class Parallax extends ModelComponent {
 
-	private LinearSequence linearSequence = new LinearSequence();
+	/**
+	 * Amount of pixels the x coordinate must be increased when the target
+	 * entity moves along the x axis.
+	 * 
+	 */
+	private float d = 1.0F;
 
-	private RandomSequence randomSequence = new RandomSequence();
-
-	public FramesProcessor(GameLoop engine, GameAssets gameAssets,
-			ComponentLoader componentLoader) {
-		super(engine, gameAssets);
-		this.componentLoader = componentLoader;
+	/**
+	 * Amount of pixels the x coordinate must be increased when the target
+	 * entity moves along the x axis.
+	 * 
+	 */
+	public float getD() {
+		return d;
 	}
 
-	@Override
-	public RendererComponent getComponent(Frames component) {
-		FramesComponent frames = gameLoop
-				.createComponent(FramesComponent.class);
-		for (Frame f : component.getFrames()) {
-			RendererComponent renderer = (RendererComponent) componentLoader
-					.toEngineComponent(f.getRenderer());
-			frames.addFrame(renderer, f.getTime());
-		}
-		switch (component.getSequence()) {
-		case LINEAR:
-			frames.setSequence(linearSequence);
-			break;
-		case RANDOM:
-			frames.setSequence(randomSequence);
-			break;
-        }
-		return frames;
+	/**
+	 * Amount of pixels the x coordinate must be increased when the target
+	 * entity moves along the x axis.
+	 * 
+	 */
+	public void setD(float d) {
+		this.d = d;
 	}
+
 }

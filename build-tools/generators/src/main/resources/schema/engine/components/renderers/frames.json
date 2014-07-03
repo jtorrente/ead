@@ -14,8 +14,7 @@
             }
         },
         "sequence": {
-            "type": "string",
-            "enum": ["linear", "random"]
+            "$ref":"sequence.json"
         }
     }
 }

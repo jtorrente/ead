@@ -1,0 +1,31 @@
+{
+    "additionalProperties": false,
+    "javaType": "es.eucm.ead.schema.components.Chase",
+    "type": "object",
+    "extends": {
+        "$ref": "trackentity.json"
+    },
+    "properties": {
+        "minDistance": {
+            "type": "number",
+            "description": "This entity must always be between maxDistance and minDistance.",
+            "default": 0
+        },
+        "maxDistance": {
+            "type": "number",
+            "description": "This entity must always be between maxDistance and minDistance.",
+            "default": 0
+        },
+        "relativeSpeed": {
+            "type": "boolean",
+            "description": "This entity must always be between maxDistance and minDistance.",
+            "default": true
+        },
+         "centerDistance": {
+             "type": "boolean",
+             "description": "If true, distance between entities is measured between centers. If false, it's measured between borders.",
+             "default": false
+         }
+    },
+    "description": "Makes the visibility of the parent entity depend on a given condition. When the condition is evaluated to true, the entity will be shown in screen and touchable."
+}

@@ -41,6 +41,8 @@ import ashley.core.Family;
 import es.eucm.ead.engine.assets.GameAssets;
 import es.eucm.ead.engine.components.I18nTextComponent;
 import es.eucm.ead.engine.processors.CamerasProcessor;
+import es.eucm.ead.engine.processors.positiontracking.ChaseProcessor;
+import es.eucm.ead.engine.processors.DisplayBoundingRectangleProcessor;
 import es.eucm.ead.engine.processors.PathProcessor;
 import es.eucm.ead.engine.processors.RefProcessor;
 import es.eucm.ead.engine.processors.TagsProcessor;
@@ -51,12 +53,15 @@ import es.eucm.ead.engine.processors.controls.ImageButtonProcessor;
 import es.eucm.ead.engine.processors.controls.LabelProcessor;
 import es.eucm.ead.engine.processors.controls.TextButtonProcessor;
 import es.eucm.ead.engine.processors.physics.VelocityProcessor;
+import es.eucm.ead.engine.processors.positiontracking.ParallaxProcessor;
+import es.eucm.ead.engine.processors.positiontracking.TrackEntityProcessor;
 import es.eucm.ead.engine.processors.renderers.EmptyRendererProcessor;
 import es.eucm.ead.engine.processors.renderers.FramesProcessor;
 import es.eucm.ead.engine.processors.renderers.ImageProcessor;
 import es.eucm.ead.engine.processors.renderers.ShapeRendererProcessor;
 import es.eucm.ead.engine.processors.renderers.StatesProcessor;
 import es.eucm.ead.engine.processors.tweens.TweensProcessor;
+import es.eucm.ead.engine.systems.DisplayBoundingRectangleSystem;
 import es.eucm.ead.engine.systems.EffectsSystem;
 import es.eucm.ead.engine.systems.KeyPressedSystem;
 import es.eucm.ead.engine.systems.PathSystem;
@@ -64,6 +69,7 @@ import es.eucm.ead.engine.systems.RemoveEntitiesSystem;
 import es.eucm.ead.engine.systems.TouchedSystem;
 import es.eucm.ead.engine.systems.VelocitySystem;
 import es.eucm.ead.engine.systems.VisibilitySystem;
+import es.eucm.ead.engine.systems.positiontracking.ChaseSystem;
 import es.eucm.ead.engine.systems.behaviors.KeyBehaviorSystem;
 import es.eucm.ead.engine.systems.behaviors.TimersSystem;
 import es.eucm.ead.engine.systems.behaviors.TouchBehaviorSystem;
@@ -85,6 +91,8 @@ import es.eucm.ead.engine.systems.effects.controlstructures.IfThenElseIfExecutor
 import es.eucm.ead.engine.systems.effects.controlstructures.RepeatExecutor;
 import es.eucm.ead.engine.systems.effects.controlstructures.ScriptCallExecutor;
 import es.eucm.ead.engine.systems.effects.controlstructures.WhileExecutor;
+import es.eucm.ead.engine.systems.positiontracking.ParallaxSystem;
+import es.eucm.ead.engine.systems.positiontracking.TrackEntitySystem;
 import es.eucm.ead.engine.systems.tweens.TweenSystem;
 import es.eucm.ead.engine.systems.tweens.tweencreators.AlphaTweenCreator;
 import es.eucm.ead.engine.systems.tweens.tweencreators.FieldTweenCreator;
@@ -94,9 +102,13 @@ import es.eucm.ead.engine.systems.tweens.tweencreators.ScaleTweenCreator;
 import es.eucm.ead.engine.systems.tweens.tweencreators.TimelineCreator;
 import es.eucm.ead.engine.variables.VariablesManager;
 import es.eucm.ead.engine.variables.VarsContext;
+import es.eucm.ead.schema.components.Chase;
+import es.eucm.ead.schema.components.DisplayBoundingRectangle;
+import es.eucm.ead.schema.components.Parallax;
 import es.eucm.ead.schema.components.PathBoundary;
 import es.eucm.ead.schema.components.RefComponent;
 import es.eucm.ead.schema.components.Tags;
+import es.eucm.ead.schema.components.TrackEntity;
 import es.eucm.ead.schema.components.Visibility;
 import es.eucm.ead.schema.components.behaviors.Behavior;
 import es.eucm.ead.schema.components.cameras.Cameras;
@@ -170,6 +182,11 @@ public class DefaultEngineInitializer implements EngineInitializer {
 		gameLoop.addSystem(new RemoveEntitiesSystem(gameLoop, variablesManager));
 		gameLoop.addSystem(new TouchedSystem());
 		gameLoop.addSystem(new KeyPressedSystem());
+		gameLoop.addSystem(new ChaseSystem(variablesManager));
+        gameLoop.addSystem(new ParallaxSystem(variablesManager));
+        gameLoop.addSystem(new TrackEntitySystem(variablesManager));
+		gameLoop.addSystem(new DisplayBoundingRectangleSystem(gameLoop,
+				gameView, componentLoader));
 
 		// Register effects
 		EffectsSystem effectsSystem = new EffectsSystem(gameLoop,
@@ -290,6 +307,16 @@ public class DefaultEngineInitializer implements EngineInitializer {
 		componentLoader.registerComponentProcessor(RefRenderer.class,
 				new RefProcessor<RefRenderer>(gameLoop, gameAssets,
 						componentLoader));
+        componentLoader.registerComponentProcessor(TrackEntity.class,
+                new TrackEntityProcessor(gameLoop));
+		componentLoader.registerComponentProcessor(Chase.class,
+				new ChaseProcessor(gameLoop));
+        componentLoader.registerComponentProcessor(Parallax.class,
+                new ParallaxProcessor(gameLoop));
+
+		componentLoader.registerComponentProcessor(
+				DisplayBoundingRectangle.class,
+				new DisplayBoundingRectangleProcessor(gameLoop));
 	}
 
 	private static class LanguageVariableListener implements

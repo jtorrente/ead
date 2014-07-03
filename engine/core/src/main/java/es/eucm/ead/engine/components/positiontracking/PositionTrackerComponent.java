@@ -34,49 +34,62 @@
  *      You should have received a copy of the GNU Lesser General Public License
  *      along with eAdventure.  If not, see <http://www.gnu.org/licenses/>.
  */
-package es.eucm.ead.engine.processors.renderers;
+package es.eucm.ead.engine.components.positiontracking;
 
-import es.eucm.ead.engine.ComponentLoader;
-import es.eucm.ead.engine.GameLoop;
-import es.eucm.ead.engine.assets.GameAssets;
-import es.eucm.ead.engine.components.renderers.RendererComponent;
-import es.eucm.ead.engine.components.renderers.frames.FramesComponent;
-import es.eucm.ead.engine.components.renderers.frames.sequences.LinearSequence;
-import es.eucm.ead.engine.components.renderers.frames.sequences.RandomSequence;
-import es.eucm.ead.schema.renderers.Frame;
-import es.eucm.ead.schema.renderers.Frames;
+import ashley.core.Component;
+import es.eucm.ead.engine.entities.EngineEntity;
 
-public class FramesProcessor extends RendererProcessor<Frames> {
+/**
+ * Created by Javier Torrente on 29/06/14.
+ */
+public class PositionTrackerComponent extends Component {
 
-	private ComponentLoader componentLoader;
+    /**
+     * An expression that must return the entity to chase after. If multiple
+     * entities are returned, the first one will be selected. (Required)
+     *
+     */
+    protected String target;
 
-	private LinearSequence linearSequence = new LinearSequence();
+    protected EngineEntity trackedEntity;
 
-	private RandomSequence randomSequence = new RandomSequence();
+	protected float lastX;
 
-	public FramesProcessor(GameLoop engine, GameAssets gameAssets,
-			ComponentLoader componentLoader) {
-		super(engine, gameAssets);
-		this.componentLoader = componentLoader;
+	protected float lastY;
+
+	public float getLastX() {
+		return lastX;
 	}
 
-	@Override
-	public RendererComponent getComponent(Frames component) {
-		FramesComponent frames = gameLoop
-				.createComponent(FramesComponent.class);
-		for (Frame f : component.getFrames()) {
-			RendererComponent renderer = (RendererComponent) componentLoader
-					.toEngineComponent(f.getRenderer());
-			frames.addFrame(renderer, f.getTime());
-		}
-		switch (component.getSequence()) {
-		case LINEAR:
-			frames.setSequence(linearSequence);
-			break;
-		case RANDOM:
-			frames.setSequence(randomSequence);
-			break;
-        }
-		return frames;
+	public float getLastY() {
+		return lastY;
 	}
+
+	public EngineEntity getTrackedEntity() {
+		return trackedEntity;
+	}
+
+	public void set(String target) {
+		this.target = target;
+	}
+
+	public void updateTarget(EngineEntity trackedEntity) {
+		this.trackedEntity = trackedEntity;
+        rememberPosition();
+	}
+
+    public void rememberPosition() {
+        this.lastX = trackedEntity.getGroup().getX();
+        this.lastY = trackedEntity.getGroup().getY();
+    }
+
+	/**
+	 * An expression that must return the entity to chase after. If multiple
+	 * entities are returned, the first one will be selected. (Required)
+	 * 
+	 */
+	public String getTarget() {
+		return target;
+	}
+
 }

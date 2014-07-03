@@ -34,49 +34,42 @@
  *      You should have received a copy of the GNU Lesser General Public License
  *      along with eAdventure.  If not, see <http://www.gnu.org/licenses/>.
  */
-package es.eucm.ead.engine.processors.renderers;
 
-import es.eucm.ead.engine.ComponentLoader;
-import es.eucm.ead.engine.GameLoop;
-import es.eucm.ead.engine.assets.GameAssets;
-import es.eucm.ead.engine.components.renderers.RendererComponent;
-import es.eucm.ead.engine.components.renderers.frames.FramesComponent;
-import es.eucm.ead.engine.components.renderers.frames.sequences.LinearSequence;
-import es.eucm.ead.engine.components.renderers.frames.sequences.RandomSequence;
-import es.eucm.ead.schema.renderers.Frame;
-import es.eucm.ead.schema.renderers.Frames;
+package es.eucm.ead.schema.renderers;
 
-public class FramesProcessor extends RendererProcessor<Frames> {
+import java.util.HashMap;
+import java.util.Map;
+import javax.annotation.Generated;
 
-	private ComponentLoader componentLoader;
+@Generated("org.jsonschema2pojo")
+public enum Sequence {
 
-	private LinearSequence linearSequence = new LinearSequence();
+	LINEAR("linear"), RANDOM("random");
+	private final String value;
+	private static Map<String, Sequence> constants = new HashMap<String, Sequence>();
 
-	private RandomSequence randomSequence = new RandomSequence();
+	static {
+		for (Sequence c : Sequence.values()) {
+			constants.put(c.value, c);
+		}
+	}
 
-	public FramesProcessor(GameLoop engine, GameAssets gameAssets,
-			ComponentLoader componentLoader) {
-		super(engine, gameAssets);
-		this.componentLoader = componentLoader;
+	private Sequence(String value) {
+		this.value = value;
 	}
 
 	@Override
-	public RendererComponent getComponent(Frames component) {
-		FramesComponent frames = gameLoop
-				.createComponent(FramesComponent.class);
-		for (Frame f : component.getFrames()) {
-			RendererComponent renderer = (RendererComponent) componentLoader
-					.toEngineComponent(f.getRenderer());
-			frames.addFrame(renderer, f.getTime());
-		}
-		switch (component.getSequence()) {
-		case LINEAR:
-			frames.setSequence(linearSequence);
-			break;
-		case RANDOM:
-			frames.setSequence(randomSequence);
-			break;
-        }
-		return frames;
+	public String toString() {
+		return this.value;
 	}
+
+	public static Sequence fromValue(String value) {
+		Sequence constant = constants.get(value);
+		if (constant == null) {
+			throw new IllegalArgumentException(value);
+		} else {
+			return constant;
+		}
+	}
+
 }

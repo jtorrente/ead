@@ -1,0 +1,1 @@
+{components:[{class:es.eucm.ead.schema.components.behaviors.Behavior,effects:[{class:es.eucm.ead.schema.effects.AddEntity,entityUri:scenes/s0.json,target:"(layer sscene_content)"},{class:es.eucm.ead.schema.effects.SetViewport,width:800,height:480}],event:{class:es.eucm.ead.schema.components.behaviors.events.Init}}]}

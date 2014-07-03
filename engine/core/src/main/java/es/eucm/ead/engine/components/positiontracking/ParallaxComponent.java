@@ -34,51 +34,22 @@
  *      You should have received a copy of the GNU Lesser General Public License
  *      along with eAdventure.  If not, see <http://www.gnu.org/licenses/>.
  */
+package es.eucm.ead.engine.components.positiontracking;
 
-package es.eucm.ead.editor.control.appdata;
+/**
+ * Created by Javier Torrente on 2/07/14.
+ */
+public class ParallaxComponent extends PositionTrackerComponent {
 
-import java.util.HashMap;
-import java.util.Map;
-import javax.annotation.Generated;
+    private float d;
 
-@Generated("org.jsonschema2pojo")
-public enum OS {
-
-    MULTIPLATFORM("multiplatform"),
-    PORTABLE_JDK_WIN_32("portable-jdk-win32"),
-    PORTABLE_JDK_WIN_64("portable-jdk-win64"),
-    PORTABLE_JDK_MACOSX("portable-jdk-macosx"),
-    PORTABLE_JDK_LINUX_I_386("portable-jdk-linux-i386"),
-    PORTABLE_JDK_LINUX_AMD_64("portable-jdk-linux-amd64"),
-    WIN_64("win64"),
-    MACOSX("macosx"),
-    LINUX_I_386("linux-i386"),
-    LINUX_AMD_64("linux-amd64");
-    private final String value;
-    private static Map<String, OS> constants = new HashMap<String, OS>();
-
-    static {
-        for (OS c: OS.values()) {
-            constants.put(c.value, c);
-        }
+    public float getD() {
+        return d;
     }
 
-    private OS(String value) {
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return this.value;
-    }
-
-    public static OS fromValue(String value) {
-        OS constant = constants.get(value);
-        if (constant == null) {
-            throw new IllegalArgumentException(value);
-        } else {
-            return constant;
-        }
+    public void set(float d) {
+        this.target = "(layer scamera)";
+        this.d = d;
     }
 
 }

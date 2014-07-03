@@ -127,7 +127,9 @@ public class OperationsFactory {
 			op = new List();
 		} else if ("randlist".equals(name)) {
 			op = new RandomList();
-		}
+		} else if ("if".equals(name)) {
+            op = new IfOperator();
+        }
 
 		if (op != null) {
 			op.setName(name);

@@ -34,49 +34,42 @@
  *      You should have received a copy of the GNU Lesser General Public License
  *      along with eAdventure.  If not, see <http://www.gnu.org/licenses/>.
  */
-package es.eucm.ead.engine.processors.renderers;
+package es.eucm.ead.engine.systems.positiontracking;
 
-import es.eucm.ead.engine.ComponentLoader;
-import es.eucm.ead.engine.GameLoop;
-import es.eucm.ead.engine.assets.GameAssets;
-import es.eucm.ead.engine.components.renderers.RendererComponent;
-import es.eucm.ead.engine.components.renderers.frames.FramesComponent;
-import es.eucm.ead.engine.components.renderers.frames.sequences.LinearSequence;
-import es.eucm.ead.engine.components.renderers.frames.sequences.RandomSequence;
-import es.eucm.ead.schema.renderers.Frame;
-import es.eucm.ead.schema.renderers.Frames;
+import ashley.core.Entity;
+import ashley.core.Family;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Pools;
+import es.eucm.ead.engine.components.positiontracking.ParallaxComponent;
+import es.eucm.ead.engine.entities.EngineEntity;
+import es.eucm.ead.engine.variables.VariablesManager;
 
-public class FramesProcessor extends RendererProcessor<Frames> {
+/**
+ * Created by Javier Torrente on 2/07/14.
+ */
+public class ParallaxSystem extends PositionTrackerSystem{
+    public ParallaxSystem(VariablesManager variablesManager) {
+        super(Family.getFamilyFor(ParallaxComponent.class), variablesManager);
+    }
 
-	private ComponentLoader componentLoader;
-
-	private LinearSequence linearSequence = new LinearSequence();
-
-	private RandomSequence randomSequence = new RandomSequence();
-
-	public FramesProcessor(GameLoop engine, GameAssets gameAssets,
-			ComponentLoader componentLoader) {
-		super(engine, gameAssets);
-		this.componentLoader = componentLoader;
-	}
-
-	@Override
-	public RendererComponent getComponent(Frames component) {
-		FramesComponent frames = gameLoop
-				.createComponent(FramesComponent.class);
-		for (Frame f : component.getFrames()) {
-			RendererComponent renderer = (RendererComponent) componentLoader
-					.toEngineComponent(f.getRenderer());
-			frames.addFrame(renderer, f.getTime());
-		}
-		switch (component.getSequence()) {
-		case LINEAR:
-			frames.setSequence(linearSequence);
-			break;
-		case RANDOM:
-			frames.setSequence(randomSequence);
-			break;
+    @Override
+    public void processEntity(Entity entity, float deltaTime) {
+        ParallaxComponent parallaxComponent = entity.getComponent(ParallaxComponent.class);
+        if (parallaxComponent.getTrackedEntity() == null){
+            updateTarget(parallaxComponent);
         }
-		return frames;
-	}
+
+        // Check target entity actually moved
+        Vector2 targetVelocity = Pools.obtain(Vector2.class);
+        getSpeedOfTrackedEntity(parallaxComponent, targetVelocity);
+        if (!MathUtils.isEqual(targetVelocity.x, 0, 0.01F)){
+            // Calculate how much this entity's position must be adjusted
+            float speed = -targetVelocity.x * (1-parallaxComponent.getD());
+            ((EngineEntity)entity).getGroup().moveBy(speed, 0);
+        }
+
+        // Update position
+        parallaxComponent.rememberPosition();
+    }
 }

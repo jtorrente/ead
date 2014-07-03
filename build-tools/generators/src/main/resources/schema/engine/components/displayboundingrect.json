@@ -1,0 +1,8 @@
+{
+    "additionalProperties": false,
+    "javaType": "es.eucm.ead.schema.components.DisplayBoundingRectangle",
+    "type": "object",
+    "extends": {
+        "$ref": "component.json"
+    }
+}

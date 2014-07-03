@@ -1,0 +1,26 @@
+{
+    "additionalProperties": false,
+    "javaType": "es.eucm.ead.schema.components.TrackEntity",
+    "type": "object",
+    "extends": {
+        "$ref": "component.json"
+    },
+    "properties": {
+        "target": {
+            "type": "string",
+            "description": "An expression that must return the entity to chase after. If multiple entities are returned, the first one will be selected.",
+            "required": true
+        },
+        "speedX": {
+            "type": "number",
+            "description": "Amount of pixels the x coordinate must be increased when the target entity moves along the x axis.",
+            "default": 1.0
+        },
+        "speedY": {
+            "type": "number",
+            "description": "Amount of pixels the y coordinate must be increased when the target entity moves along the y axis.",
+            "default": 1.0
+        }
+    },
+    "description": "Makes the visibility of the parent entity depend on a given condition. When the condition is evaluated to true, the entity will be shown in screen and touchable."
+}

@@ -39,6 +39,7 @@ package es.eucm.ead.editor.control.appdata;
 
 import javax.annotation.Generated;
 
+
 /**
  * Simple object for pairing the installer url with an os version
  * 
@@ -46,53 +47,47 @@ import javax.annotation.Generated;
 @Generated("org.jsonschema2pojo")
 public class UpdatePlatformInfo {
 
-	/**
-	 * Simple enum that stores platform-os types. To be used by UpdateInfo and
-	 * ReleaseInfo. More info:
-	 * https://github.com/e-ucm/ead/wiki/Platform-version-names
-	 * 
-	 */
-	private OS os = OS.fromValue("multiplatform");
-	/**
-	 * The appropriate url for downloading the installer for this particular os
-	 * 
-	 */
-	private String url;
+    /**
+     * Simple enum that stores platform-os types. To be used by UpdateInfo and ReleaseInfo. More info: https://github.com/e-ucm/ead/wiki/Platform-version-names
+     * 
+     */
+    private OS os = OS.fromValue("multiplatform");
+    /**
+     * The appropriate url for downloading the installer for this particular os
+     * 
+     */
+    private String url;
 
-	/**
-	 * Simple enum that stores platform-os types. To be used by UpdateInfo and
-	 * ReleaseInfo. More info:
-	 * https://github.com/e-ucm/ead/wiki/Platform-version-names
-	 * 
-	 */
-	public OS getOs() {
-		return os;
-	}
+    /**
+     * Simple enum that stores platform-os types. To be used by UpdateInfo and ReleaseInfo. More info: https://github.com/e-ucm/ead/wiki/Platform-version-names
+     * 
+     */
+    public OS getOs() {
+        return os;
+    }
 
-	/**
-	 * Simple enum that stores platform-os types. To be used by UpdateInfo and
-	 * ReleaseInfo. More info:
-	 * https://github.com/e-ucm/ead/wiki/Platform-version-names
-	 * 
-	 */
-	public void setOs(OS os) {
-		this.os = os;
-	}
+    /**
+     * Simple enum that stores platform-os types. To be used by UpdateInfo and ReleaseInfo. More info: https://github.com/e-ucm/ead/wiki/Platform-version-names
+     * 
+     */
+    public void setOs(OS os) {
+        this.os = os;
+    }
 
-	/**
-	 * The appropriate url for downloading the installer for this particular os
-	 * 
-	 */
-	public String getUrl() {
-		return url;
-	}
+    /**
+     * The appropriate url for downloading the installer for this particular os
+     * 
+     */
+    public String getUrl() {
+        return url;
+    }
 
-	/**
-	 * The appropriate url for downloading the installer for this particular os
-	 * 
-	 */
-	public void setUrl(String url) {
-		this.url = url;
-	}
+    /**
+     * The appropriate url for downloading the installer for this particular os
+     * 
+     */
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
 }
