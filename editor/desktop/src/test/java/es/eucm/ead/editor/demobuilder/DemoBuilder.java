@@ -52,9 +52,13 @@ import es.eucm.ead.editor.utils.ZipUtils;
 import es.eucm.ead.engine.EngineDesktop;
 import es.eucm.ead.engine.assets.GameAssets;
 import es.eucm.ead.engine.mock.MockApplication;
+import es.eucm.ead.schema.assets.Sound;
 import es.eucm.ead.schema.components.ModelComponent;
 import es.eucm.ead.schema.components.Tags;
 import es.eucm.ead.schema.components.behaviors.Event;
+import es.eucm.ead.schema.components.controls.ImageButton;
+import es.eucm.ead.schema.components.controls.Label;
+import es.eucm.ead.schema.components.controls.TextButton;
 import es.eucm.ead.schema.components.positiontracking.Parallax;
 import es.eucm.ead.schema.components.behaviors.Behavior;
 import es.eucm.ead.schema.components.behaviors.events.Init;
@@ -75,6 +79,8 @@ import es.eucm.ead.schema.effects.AddComponent;
 import es.eucm.ead.schema.effects.AddEntity;
 import es.eucm.ead.schema.effects.ChangeVar;
 import es.eucm.ead.schema.effects.Effect;
+import es.eucm.ead.schema.effects.EndGame;
+import es.eucm.ead.schema.effects.GoScene;
 import es.eucm.ead.schema.effects.SetViewport;
 import es.eucm.ead.schema.effects.controlstructures.ControlStructure;
 import es.eucm.ead.schema.entities.ModelEntity;
@@ -86,6 +92,7 @@ import es.eucm.ead.schemax.GameStructure;
 import es.eucm.ead.schema.effects.controlstructures.IfThenElseIf;
 import es.eucm.ead.schema.effects.controlstructures.If;
 import es.eucm.ead.schema.effects.controlstructures.While;
+import es.eucm.ead.schema.components.tweens.Timeline;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -449,24 +456,42 @@ public abstract class DemoBuilder {
 	 *            Height of the viewport
 	 */
 	public DemoBuilder game(int width, int height) {
-		gameWidth = width;
-		gameHeight = height;
-
-		ModelEntity game = entity().getLastEntity();
-		Behavior init = new Behavior();
-		init.setEvent(new Init());
-		AddEntity loadScene = new AddEntity();
-		loadScene.setEntityUri(DEFAULT_SCENE_PREF + sceneCount + JSON);
-		loadScene.setTarget("(layer sscene_content)");
-		init.getEffects().add(loadScene);
-		SetViewport viewport = new SetViewport();
-		viewport.setWidth(width);
-		viewport.setHeight(height);
-		init.getEffects().add(viewport);
-		game.getComponents().add(init);
-		entities.put(GameStructure.GAME_FILE, game);
-		return this;
+        return game(width, height, null, DEFAULT_SCENE_PREF + sceneCount + JSON);
 	}
+
+    /**
+     * Builds a game of the given size. It does not create any scene, but it
+     * assumes a scene with uri {@code initialScenePath} will be
+     * available as the first scene, and creates the corresponding effect (if not null). Also creates the effect that adds the given {@code hudPath} to the hud, if not null.
+     *
+     * @param width
+     *            Width of the viewport
+     * @param height
+     *            Height of the viewport
+     * @param hudPath   Path to the hud to be added. If null, nothing happens
+     * @param initialScenePath Path to the initial scene. If null, nothing happens.
+     */
+    public DemoBuilder game(int width, int height, String hudPath, String initialScenePath) {
+        gameWidth = width;
+        gameHeight = height;
+
+        ModelEntity game = entity().getLastEntity();
+
+        initBehavior(game);
+        if (initialScenePath!=null){
+            effect(getLastComponent(), "(layer sscene_content)", makeAddEntity(initialScenePath));
+        }
+        if (hudPath!=null){
+            effect(getLastComponent(), "(layer hud)", makeAddEntity(hudPath));
+        }
+
+        SetViewport viewport = new SetViewport();
+        viewport.setWidth(width);
+        viewport.setHeight(height);
+        effect(getLastComponent(), viewport);
+        entities.put(GameStructure.GAME_FILE, game);
+        return this;
+    }
 
 	/**
 	 * Creates a game with just one scene configured with the given
@@ -505,7 +530,7 @@ public abstract class DemoBuilder {
 	 *            The entity to add this entity to to. Can be null (the entity
 	 *            is not added anywhere)
 	 * @param imageUri
-	 *            The relative uri of the image to serve as renderer
+	 *            The relative uri of the image to serve as renderer. Can be null, then no renderer is created.
 	 * @param x
 	 *            The x coordinate for the new child entity
 	 * @param y
@@ -514,10 +539,12 @@ public abstract class DemoBuilder {
 	public DemoBuilder entity(ModelEntity parent, String imageUri, float x,
 			float y) {
 		ModelEntity modelEntity = entity().getLastEntity();
-		Image image = new Image();
-		image.setUri(imageUri);
-		image.setCollider(createSchemaCollider(imageUri));
-		modelEntity.getComponents().add(image);
+        if (imageUri!=null){
+            Image image = new Image();
+            image.setUri(imageUri);
+            image.setCollider(createSchemaCollider(imageUri));
+            modelEntity.getComponents().add(image);
+        }
 		modelEntity.setX(x);
 		modelEntity.setY(y);
 		if (parent != null) {
@@ -533,7 +560,7 @@ public abstract class DemoBuilder {
 	 * @param parent
 	 *            The entity to add this entity to to
 	 * @param imageUri
-	 *            The relative uri of the image to serve as renderer
+	 *            The relative uri of the image to serve as renderer. Can be null, then no renderer is created.
 	 * @param verticalAlign
 	 *            Can be TOP (sticks the entity to screen top), BOTTOM (sticks
 	 *            the entity to screen bottom) or CENTER (places the entity
@@ -557,18 +584,29 @@ public abstract class DemoBuilder {
 		return entity(parent, imageUri, x, y);
 	}
 
+    /**
+     * Creates a scene with the given image as background
+     *
+     * @param imageUri
+     *            The relative uri of the image to serve as renderer for the
+     *            background
+     */
+    public DemoBuilder scene(String imageUri) {
+        return scene(DEFAULT_SCENE_PREF + (sceneCount++) + JSON, imageUri);
+    }
+
 	/**
-	 * Creates a scene with the given image as background
-	 * 
+	 * Creates a scene with the given image as background and the given sceneUri.
+	 *
+     * @param sceneUri The relative uri of the scene
 	 * @param imageUri
 	 *            The relative uri of the image to serve as renderer for the
-	 *            background
+	 *            background. Can be null, then no renderer is created.
 	 */
-	public DemoBuilder scene(String imageUri) {
+	public DemoBuilder scene(String sceneUri, String imageUri) {
 		lastScene = entity().getLastEntity();
 		lastScene.getChildren().add(entity(imageUri, 0, 0).getLastEntity());
-		String sceneId = DEFAULT_SCENE_PREF + (sceneCount++) + JSON;
-		entities.put(sceneId, lastScene);
+		entities.put(sceneUri, lastScene);
 		return this;
 	}
 
@@ -580,7 +618,7 @@ public abstract class DemoBuilder {
 	 * @param entityUri
 	 *            The uri to save the entity to
 	 * @param imageUri
-	 *            The relative uri of the image to serve as renderer
+	 *            The relative uri of the image to serve as renderer. Can be null, then no renderer is created.
 	 * @param x
 	 *            The x coordinate for the reusable entity
 	 * @param y
@@ -653,6 +691,71 @@ public abstract class DemoBuilder {
 
 		return this;
 	}
+
+    /**
+     * Adds a {@link Label} component with the given text and style to the last entity added to {@link #entities}.
+     * @param text  The text for the label ({@link Label#text})
+     * @param style The style for the label ({@link Label#style})
+     */
+    public DemoBuilder label (String text, String style){
+        return label (getLastEntity(), text, style);
+    }
+
+    /**
+     * Adds a {@link Label} component with the given text and style to the {@code parent} entity.
+     * @param parent    The entity to add this component to
+     * @param text  The text for the label ({@link Label#text})
+     * @param style The style for the label ({@link Label#style})
+     */
+    public DemoBuilder label (ModelEntity parent, String text, String style){
+        lastComponent = makeLabel(text, style);
+        parent.getComponents().add(lastComponent);
+        return this;
+    }
+
+    /**
+     * Adds a {@link TextButton} component with the given text and style to the last entity added to {@link #entities}.
+     * @param text  The text for the text button ({@link TextButton#text})
+     * @param style The style for the text button ({@link TextButton#style})
+     */
+    public DemoBuilder textButton (String text, String style){
+        return textButton(getLastEntity(), text, style);
+    }
+
+    /**
+     * Adds a {@link TextButton} component with the given text and style to the {@code parent} entity.
+     * @param parent    The entity to add this component to
+     * @param text  The text for the text button ({@link TextButton#text})
+     * @param style The style for the text button ({@link TextButton#style})
+     */
+    public DemoBuilder textButton (ModelEntity parent, String text, String style){
+        lastComponent = makeTextButton(text, style);
+        parent.getComponents().add(lastComponent);
+        return this;
+    }
+
+    /**
+     * Adds a {@link ImageButton} component with the given images and style to the last entity added to {@link #entities}.
+     * @param imageUp   {@link ImageButton#imageUp}. Can be null (nothing happens)
+     * @param imageDown   {@link ImageButton#imageDown}. Can be null (nothing happens)
+     * @param style    {@link ImageButton#style}. Can be null (nothing happens)
+     */
+    public DemoBuilder imageButton (String imageUp, String imageDown, String style){
+        return imageButton(getLastEntity(), imageUp, imageDown, style);
+    }
+
+    /**
+     * Adds a {@link ImageButton} component with the given images and style to the {@code parent} entity.
+     * @param parent    The entity to add this component to
+     * @param imageUp   {@link ImageButton#imageUp}. Can be null (nothing happens)
+     * @param imageDown   {@link ImageButton#imageDown}. Can be null (nothing happens)
+     * @param style    {@link ImageButton#style}. Can be null (nothing happens)
+     */
+    public DemoBuilder imageButton (ModelEntity parent, String imageUp, String imageDown, String style){
+        lastComponent = makeImageButton(imageUp, imageDown, style);
+        parent.getComponents().add(lastComponent);
+        return this;
+    }
 
 	/**
 	 * Adds a parallax component to the last entity added to {@link #entities}.
@@ -808,9 +911,9 @@ public abstract class DemoBuilder {
 
 	/**
 	 * Creates and adds a tween of the given type with the given properties to
-	 * the given {@code parent} entity.
+	 * the given {@code container} object. Supported container types: {@link ModelEntity} and {@link Timeline}.
 	 */
-	public <T extends Tween> DemoBuilder tween(ModelEntity parent,
+	public <T extends Tween> DemoBuilder tween(Object container,
 			Class<T> clazz, Float delay, Integer repeat, Float repeatDelay,
 			Boolean yoyo, Float duration, Boolean relative,
 			Tween.EaseEquation easeEquation, Tween.EaseType easeType,
@@ -818,8 +921,15 @@ public abstract class DemoBuilder {
 		Tween tween = makeTween(clazz, delay, repeat, repeatDelay, yoyo,
 				duration, relative, easeEquation, easeType, value1, value2,
 				component, field);
-		parent.getComponents().add(tween);
-		lastComponent = tween;
+        if (container instanceof ModelEntity){
+            ModelEntity parent = (ModelEntity)container;
+            parent.getComponents().add(tween);
+            lastComponent = tween;
+        } else if (container instanceof Timeline){
+            Timeline timeline = new Timeline();
+            timeline.getChildren().add(tween);
+            lastComponent = tween;
+        }
 		return this;
 	}
 
@@ -875,12 +985,38 @@ public abstract class DemoBuilder {
 		return this;
 	}
 
+    /**
+     * Adds the given {@code effect} to the given {@code container}, which can
+     * be {@link Behavior}, {@link Script}, {@link Node} or
+     * {@link ControlStructure}.
+     */
+    public DemoBuilder effect(Object container, Effect effect) {
+        return effect(container, null, effect);
+    }
+
+    /**
+     * Adds the given {@code effect} to the last component added to {@link #entities}.
+     */
+    public DemoBuilder effect(Effect effect) {
+        return effect(getLastComponent(), null, effect);
+    }
+
+    /**
+     * Adds the given {@code effect} to the last component addedThe given {@code target} expression is set to the {@code effect} before it is added to the component.
+     */
+    public DemoBuilder effect(String target, Effect effect) {
+        return effect(getLastComponent(), target, effect);
+    }
+
 	/**
 	 * Adds the given {@code effect} to the given {@code container}, which can
 	 * be {@link Behavior}, {@link Script}, {@link Node} or
-	 * {@link ControlStructure}.
+	 * {@link ControlStructure}. The given {@code target} expression is set to the {@code effect}.
 	 */
-	public DemoBuilder effect(Object container, Effect effect) {
+	public DemoBuilder effect(Object container, String target, Effect effect) {
+        if (target!=null){
+            effect.setTarget(target);
+        }
 		if (container instanceof Behavior) {
 			Behavior behavior = (Behavior) container;
 			behavior.getEffects().add(effect);
@@ -966,6 +1102,43 @@ public abstract class DemoBuilder {
 		return this;
 	}
 
+    /**
+     * Adds a {@link GoScene} effect to the last component created in {@link #entities} that loads the last scene created in {@link #entities}.
+     */
+    public DemoBuilder goScene(){
+        return effect (makeGoScene());
+    }
+
+    /**
+     * Adds a {@link GoScene} effect to the last component created in {@link #entities} that loads the last scene stored in path {@code scenePath}.
+     */
+    public DemoBuilder goScene(String scenePath){
+        return effect(makeGoScene(scenePath));
+    }
+
+    /**
+     * Adds a {@link GoScene} effect to the {@code container} object provided that loads the last scene stored in path {@code scenePath}.
+     * For more details on supported container types, see {@link #effect(Object, Effect)}.
+     */
+    public DemoBuilder goScene(Object container, String scenePath){
+        return effect(container, makeGoScene(scenePath));
+    }
+
+    /**
+     * Adds a {@link EndGame} effect to the last component added to {@link #entities}.
+     */
+    public DemoBuilder endGame(){
+        return effect(getLastComponent(), makeEndGame());
+    }
+
+    /**
+     * Adds a {@link EndGame} effect to the {@code container} object provided.
+     * @param container The object to add this effect to. For a list of supported types, see {@link #effect(Object, Effect)}.
+     */
+    public DemoBuilder endGame(Object container){
+        return effect(container, makeEndGame());
+    }
+
 	/**
 	 * Creates an {@link AddComponent} effect with the given {@code target} and
 	 * {@code componentToAdd} and adds it to the last component added to
@@ -1017,6 +1190,58 @@ public abstract class DemoBuilder {
 		return null;
 	}
 
+    /**
+     * Creates a label component {@link Label}
+     * @param text  {@link Label#text}
+     * @param style {@link Label#style}
+     */
+    public Label makeLabel (String text, String style){
+        Label label = new Label();
+        if (text!=null){
+            label.setText(text);
+        }
+        if (style!=null){
+            label.setStyle(style);
+        }
+        return label;
+    }
+
+    /**
+     * Creates a {@link TextButton} with the given {@code text} and {@code style}
+     * @param text  {@link TextButton#text}
+     * @param style  {@link TextButton#style}
+     */
+    public TextButton makeTextButton (String text, String style){
+        TextButton textButton = new TextButton();
+        if (text!=null){
+            textButton.setText(text);
+        }
+        if (style!=null){
+            textButton.setStyle(style);
+        }
+        return  textButton;
+    }
+
+    /**
+     * Creates a {@link ImageButton} with the given {@code imageUp} and {@code style}
+     * @param imageUp  {@link ImageButton#imageUp}
+     * @param imageDown  {@link ImageButton#imageDown}
+     * @param style  {@link ImageButton#style}
+     */
+    public ImageButton makeImageButton (String imageUp, String imageDown, String style){
+        ImageButton imageButton = new ImageButton();
+        if (imageUp!=null){
+            imageButton.setImageUp(imageUp);
+        }
+        if (imageDown!=null){
+            imageButton.setImageDown(imageDown);
+        }
+        if (style!=null){
+            imageButton.setStyle(style);
+        }
+        return  imageButton;
+    }
+
 	/**
 	 * Creates an {@link AddEntity} effect with the given entity uri
 	 */
@@ -1062,16 +1287,46 @@ public abstract class DemoBuilder {
 	 * Creates a {@link AddComponent} effect
 	 * 
 	 * @param target
-	 *            {@link AddComponent#target}
+	 *            {@link AddComponent#target}. Can be null (nothing happens)
 	 * @param component
 	 *            {@link AddComponent#component}
 	 */
 	public AddComponent makeAddComponent(String target, ModelComponent component) {
 		AddComponent addComponent = new AddComponent();
 		addComponent.setComponent(component);
-		addComponent.setTarget(target);
+        if (target!=null){
+		    addComponent.setTarget(target);
+        }
 		return addComponent;
 	}
+
+    /**
+     * Creates a {@link GoScene} effect to load the scene located at path {@code sceneToGo}.
+     */
+    public GoScene makeGoScene(String sceneToGo){
+        GoScene goScene = new GoScene();
+        goScene.setName(sceneToGo);
+        return goScene;
+    }
+
+    /**
+     * Creates a {@link GoScene} effect to load the last scene added to {@link #entities}.
+     */
+    public GoScene makeGoScene(){
+        for (Map.Entry<String, ModelEntity> entries: entities.entrySet()){
+            if (entries.getValue() == getLastScene()){
+                return makeGoScene(entries.getKey());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Creates a {@link EndGame} effect
+     */
+    public EndGame makeEndGame(){
+        return new EndGame();
+    }
 
 	/**
 	 * Creates a {@link ScaleTween} tho mirror an entity on the x axis. It
@@ -1177,6 +1432,24 @@ public abstract class DemoBuilder {
 		}
 		return null;
 	}
+
+    /**
+     * Creates a {@link Sound} component with the given {@code uri}.
+     * @param uri   {@link Sound#uri}. Cannot be null.
+     * @param loop {@link Sound#loop}. Can be null (nothing happens).
+     * @param volume {@link Sound#volume}. Can be null (nothing happens).
+     */
+    public Sound makeSound (String uri, Boolean loop, Float volume){
+        Sound sound = new Sound();
+        sound.setUri(uri);
+        if (loop!=null){
+            sound.setLoop(loop);
+        }
+        if (volume!=null){
+            sound.setVolume(volume);
+        }
+        return sound;
+    }
 
 	/**
 	 * Creates an expression for retrieving all entities with a given tag.
