@@ -1,6 +1,7 @@
 package es.eucm.ead.engine.demos;
 
 import es.eucm.ead.editor.demobuilder.DemoBuilder;
+import es.eucm.ead.schema.components.behaviors.Behavior;
 import es.eucm.ead.schema.components.tweens.AlphaTween;
 import es.eucm.ead.schema.components.tweens.MoveTween;
 import es.eucm.ead.schema.components.tweens.RotateTween;
@@ -9,6 +10,8 @@ import es.eucm.ead.schema.components.tweens.Timeline;
 import es.eucm.ead.schema.components.tweens.Tween;
 import es.eucm.ead.schema.data.Script;
 import es.eucm.ead.schema.effects.ChangeVar;
+import es.eucm.ead.schema.effects.SetCamera;
+import es.eucm.ead.schema.effects.controlstructures.ScriptCall;
 import es.eucm.ead.schema.entities.ModelEntity;
 
 /**
@@ -26,12 +29,23 @@ public class CoolDemo2 extends DemoBuilder{
         String hud = "huds/default.json";
         String mainScene = "scenes/scene2.json";
         String sceneBackground = "images/map.png";
+        xGap = 10;
+        yGap = 10;
 
         // Create the game file
         game(1066, 600, hud, initialScene).changeVar("showbee", "btrue", ChangeVar.Context.GLOBAL);
 
         // Initial scene. Just loads second scene
         scene(initialScene, sceneBackground).initBehavior().goScene(mainScene);
+
+        // Create hud
+        createMainHud(hud);
+
+
+    }
+
+    private void createMainScene(){
+
     }
 
     private void createMainHud(String hud){
@@ -63,8 +77,28 @@ public class CoolDemo2 extends DemoBuilder{
         // Button for showing/hiding the bee
         entity(hudEntity, null, 50, 50).imageButton("images/bee_showhide.png", "images/bee_showhide.png", "white").touchBehavior().changeVar("showbee","(not $showbee)");
         // Buttons for increasing/decreasing chameleon's alpha
-        Script script = new Script();
-        entity(hudEntity, null, 130, 50).imageButton("images/chameleon_incalpha.png", "images/chameleon_incalpha.png", "white").touchBehavior();
+        Behavior touch = entity(hudEntity, null, VerticalAlign.REL_TO_PREVIOUS, HorizontalAlign.LEFT).imageButton("images/chameleon_incalpha.png", "images/chameleon_incalpha.png", "white").touchBehavior().getLastComponent(Behavior.class);
+        Script script =scriptCall(touch, "f0.05").script("alpha_inc").getLastModelPiece(Script.class);
+        changeEntityProperty(script, "group.color.a", "(+ (prop $_target sgroup.color.a) $alpha_inc)").target(makeEntitiesWithTagExp("chameleon"));
+        changeVar(touch, "_effects_volume", "(min f1.0 (+ $_effects_volume f0.2))");
+        ScriptCall scriptCall2 = entity(hudEntity, null, VerticalAlign.REL_TO_PREVIOUS, HorizontalAlign.LEFT).imageButton("images/chameleon_decalpha.png", "images/chameleon_decalpha.png", "white").touchBehavior().scriptCall("f-0.05").getLastModelPiece(ScriptCall.class);
+        scriptCall2.setScript(script);
+        changeVar(touch, "_effects_volume", "(max f0.0 (- $_effects_volume f0.2))");
+        // Button for zooming into alien
+        SetCamera setCamera = new SetCamera();
+        setCamera.setAnimationTime(2);
+        setCamera.setCameraId("cameraAlien");
+        entity(hudEntity, null, VerticalAlign.REL_TO_PREVIOUS, HorizontalAlign.LEFT).imageButton("images/alien_zoomin.png", "images/alien_zoomin.png", "white").touchBehavior(setCamera);
+        // Button for zooming into chameleon
+        setCamera = new SetCamera();
+        setCamera.setAnimationTime(3);
+        setCamera.setCameraId("cameraChameleon");
+        entity(hudEntity, null, VerticalAlign.REL_TO_PREVIOUS, HorizontalAlign.LEFT).imageButton("images/chameleon_zoomin.png", "images/chameleon_zoomin.png", "white").touchBehavior(setCamera);
+        // Button for zooming out
+        setCamera = new SetCamera();
+        setCamera.setAnimationTime(0);
+        setCamera.setCameraId("defaultCamera");
+        entity(hudEntity, null, VerticalAlign.REL_TO_PREVIOUS, HorizontalAlign.LEFT).imageButton("images/zoom_out.png", "images/zoom_out.png", "white").touchBehavior(setCamera);
     }
 
     protected <T extends Tween> DemoBuilder tween (Object container, Class<T> clazz, Float value1, Float value2, Boolean relative, Float duration, Tween.EaseEquation easeEquation){

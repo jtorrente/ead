@@ -41,12 +41,15 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl.LwjglNativesLoader;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.reflect.ClassReflection;
 import com.badlogic.gdx.utils.reflect.Field;
 import com.badlogic.gdx.utils.reflect.ReflectionException;
 import com.vividsolutions.jts.geom.Geometry;
 import es.eucm.ead.editor.DesktopPlatform;
+import es.eucm.ead.editor.control.actions.model.Scale;
 import es.eucm.ead.editor.utils.GeometryUtils;
 import es.eucm.ead.editor.utils.ZipUtils;
 import es.eucm.ead.engine.EngineDesktop;
@@ -77,12 +80,14 @@ import es.eucm.ead.schema.data.conversation.Node;
 import es.eucm.ead.schema.data.shape.Polygon;
 import es.eucm.ead.schema.effects.AddComponent;
 import es.eucm.ead.schema.effects.AddEntity;
+import es.eucm.ead.schema.effects.ChangeEntityProperty;
 import es.eucm.ead.schema.effects.ChangeVar;
 import es.eucm.ead.schema.effects.Effect;
 import es.eucm.ead.schema.effects.EndGame;
 import es.eucm.ead.schema.effects.GoScene;
 import es.eucm.ead.schema.effects.SetViewport;
 import es.eucm.ead.schema.effects.controlstructures.ControlStructure;
+import es.eucm.ead.schema.effects.controlstructures.ScriptCall;
 import es.eucm.ead.schema.entities.ModelEntity;
 import es.eucm.ead.schema.renderers.Frame;
 import es.eucm.ead.schema.renderers.Frames;
@@ -189,11 +194,16 @@ public abstract class DemoBuilder {
 	protected ModelEntity lastEntity;
 	protected ModelEntity lastScene;
 	protected ModelComponent lastComponent;
+    protected Object lastModelPiece;
 
 	// Some game properties that come in handy
 	protected int sceneCount;
 	protected float gameWidth;
 	protected float gameHeight;
+
+    // These properties are used for laying out entities relative to the previous entity added
+    protected int xGap = 5;
+    protected int yGap = 5;
 
 	protected GameAssets gameAssets;
 
@@ -208,6 +218,8 @@ public abstract class DemoBuilder {
 	// To determine image dimensions
 	protected DesktopPlatform platform;
 
+    protected EntityDimensionBuilder entityDimensionBuilder;
+
 	/**
 	 * Creates the object but does not actually build the game. Just creates the
 	 * temp folder and unzips the the contents of the file specified by the
@@ -221,6 +233,7 @@ public abstract class DemoBuilder {
 		platform = new DesktopPlatform();
 		entities = new HashMap<String, ModelEntity>();
 		gameAssets = new GameAssets(Gdx.files);
+        entityDimensionBuilder = new EntityDimensionBuilder();
 		sceneCount = 0;
 	}
 
@@ -245,6 +258,47 @@ public abstract class DemoBuilder {
 	private Dimension getImageDimension(String imageUri) {
 		return platform.getImageDimension(gameAssets.resolve(imageUri).read());
 	}
+
+    private Dimension getEntityDimension(ModelEntity entity){
+        Vector2 x = new Vector2();
+        Vector2 y = new Vector2();
+        x.set(Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY);
+        y.set(Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY);
+        buildEntitySize(entity, x, y);
+        Dimension dimension = new Dimension();
+        dimension.setWidth((int) (x.y-x.x));
+        dimension.setHeight((int) (y.y-y.x));
+        return dimension;
+    }
+
+    private void buildEntitySize(ModelEntity entity, Vector2 x, Vector2 y){
+        for (ModelComponent component: entity.getComponents()){
+            if (component instanceof Renderer){
+                Rectangle rendererRect = entityDimensionBuilder.getDimension((Renderer)component);
+                x.set(Math.min(rendererRect.x, x.x), Math.max(rendererRect.x+rendererRect.width, x.y));
+                y.set(Math.min(rendererRect.y, y.x), Math.max(rendererRect.y+rendererRect.height, y.y));
+            }
+        }
+
+        for (ModelEntity child: entity.getChildren()){
+            buildEntitySize(child, x, y);
+        }
+    }
+
+    private DemoBuilder updateLastModelPiece(Object lastModelPiece){
+        this.lastModelPiece = lastModelPiece;
+        return this;
+    }
+
+    private DemoBuilder updateLastComponent(ModelComponent component){
+        this.lastComponent = component;
+        return this;
+    }
+
+    private DemoBuilder updateLastEntity(ModelEntity entity){
+        this.lastEntity = entity;
+        return this;
+    }
 
 	// ////////////////////////////////////////////////////
 	// Public methods for building, saving, and running the game
@@ -441,6 +495,24 @@ public abstract class DemoBuilder {
 		return clazz.cast(lastComponent);
 	}
 
+    /**
+     * @return the last model piece created and added to the model ({@link #entities}), casted to the {@link Class} provided as an argument.
+     *
+     * A "model piece" is whatever last object created by the builder which is not a component or an entity. For example, {@link Script}.
+     */
+    public <T> T getLastModelPiece(Class<T> clazz) {
+        return clazz.cast(lastModelPiece);
+    }
+
+    /**
+     * @return the last model piece created and added to the model ({@link #entities}).
+     *
+     * A "model piece" is whatever last object created by the builder which is not a component or an entity. For example, {@link Script}.
+     */
+    public Object getLastModelPiece(){
+        return lastModelPiece;
+    }
+
 	// //////////////////////////////////////////////////////////
 	// Methods for building entities (modify the game structure)
 	// /////////////////////////////////////////////////////////
@@ -475,7 +547,7 @@ public abstract class DemoBuilder {
         gameWidth = width;
         gameHeight = height;
 
-        ModelEntity game = entity().getLastEntity();
+        ModelEntity game = makeEntity();
 
         initBehavior(game);
         if (initialScenePath!=null){
@@ -489,7 +561,9 @@ public abstract class DemoBuilder {
         viewport.setWidth(width);
         viewport.setHeight(height);
         effect(getLastComponent(), viewport);
+
         entities.put(GameStructure.GAME_FILE, game);
+        lastEntity = game;
         return this;
     }
 
@@ -505,11 +579,6 @@ public abstract class DemoBuilder {
 		Dimension backgroundDim = getImageDimension(backgroundUri);
 		game(backgroundDim.getWidth(), backgroundDim.getHeight()).scene(
 				backgroundUri);
-		return this;
-	}
-
-	private DemoBuilder entity() {
-		lastEntity = new ModelEntity();
 		return this;
 	}
 
@@ -538,18 +607,21 @@ public abstract class DemoBuilder {
 	 */
 	public DemoBuilder entity(ModelEntity parent, String imageUri, float x,
 			float y) {
-		ModelEntity modelEntity = entity().getLastEntity();
+		ModelEntity modelEntity = makeEntity();
         if (imageUri!=null){
             Image image = new Image();
             image.setUri(imageUri);
             image.setCollider(createSchemaCollider(imageUri));
             modelEntity.getComponents().add(image);
+            lastComponent = image;
         }
 		modelEntity.setX(x);
 		modelEntity.setY(y);
 		if (parent != null) {
 			parent.getChildren().add(modelEntity);
 		}
+
+        lastEntity = modelEntity;
 		return this;
 	}
 
@@ -563,26 +635,58 @@ public abstract class DemoBuilder {
 	 *            The relative uri of the image to serve as renderer. Can be null, then no renderer is created.
 	 * @param verticalAlign
 	 *            Can be TOP (sticks the entity to screen top), BOTTOM (sticks
-	 *            the entity to screen bottom) or CENTER (places the entity
-	 *            vertically centered on the screen).
+	 *            the entity to screen bottom), CENTER (places the entity
+	 *            vertically centered on the screen) or REL_TO_PREVIOUS (places the entity to a distance of {@link #yGap} units below of the last entity added).
 	 * @param horizontalAlign
 	 *            Can be LEFT(sticks the entity to the left of the screen),
-	 *            RIGHT (sticks the entity to the right of the screen) or CENTER
-	 *            (places the entity horizontally on the screen).
+	 *            RIGHT (sticks the entity to the right of the screen), CENTER
+	 *            (places the entity horizontally on the screen) or REL_TO_PREVIOUS (places the entity to a distance of {@link #xGap} units to the right of the last entity added).
 	 */
 	public DemoBuilder entity(ModelEntity parent, String imageUri,
 			VerticalAlign verticalAlign, HorizontalAlign horizontalAlign) {
 		Dimension imageDim = getImageDimension(imageUri);
-		float x = horizontalAlign == HorizontalAlign.LEFT ? 0
+        float x = horizontalAlign == HorizontalAlign.LEFT ? xGap
 				: (horizontalAlign == HorizontalAlign.RIGHT ? gameWidth
-						- imageDim.getWidth() : (gameWidth - imageDim
+						- imageDim.getWidth()-xGap : (gameWidth - imageDim
 						.getWidth()) / 2.0F);
-		float y = verticalAlign == VerticalAlign.DOWN ? 0
+		float y = verticalAlign == VerticalAlign.DOWN ? yGap
 				: (verticalAlign == VerticalAlign.UP ? gameHeight
-						- imageDim.getHeight() : (gameHeight - imageDim
+						- imageDim.getHeight()-yGap : (gameHeight - imageDim
 						.getHeight()) / 2.0F);
-		return entity(parent, imageUri, x, y);
+
+        ModelEntity prevEntity = lastEntity;
+
+        if (prevEntity!=null) {
+            Dimension prevEntityDim = getEntityDimension(prevEntity);
+            if (horizontalAlign == HorizontalAlign.REL_TO_PREVIOUS){
+                x = prevEntity.getX()+prevEntityDim.getWidth()+xGap;
+                y= prevEntity.getY();
+            } else if (verticalAlign == VerticalAlign.REL_TO_PREVIOUS){
+                x=prevEntity.getY() - yGap;
+                y=prevEntity.getX();
+            }
+        }
+
+        return entity(parent, imageUri, x, y);
 	}
+
+    public DemoBuilder labelEentity(String text, String style, float x, float y) {
+        return entity(null, x,y).label(text, style);
+    }
+
+    public DemoBuilder labelEentity(ModelEntity parent, String text, String style, float x,
+                              float y) {
+        return entity(parent, null, x, y).label(text, style);
+    }
+
+    public DemoBuilder textButtonEentity(String text, String style, float x, float y) {
+        return entity(null, x, y).textButton(text, style);
+    }
+
+    public DemoBuilder textButtonEentity(ModelEntity parent, String text, String style, float x,
+                                    float y) {
+        return entity(parent, null, x, y).textButton(text, style);
+    }
 
     /**
      * Creates a scene with the given image as background
@@ -604,7 +708,7 @@ public abstract class DemoBuilder {
 	 *            background. Can be null, then no renderer is created.
 	 */
 	public DemoBuilder scene(String sceneUri, String imageUri) {
-		lastScene = entity().getLastEntity();
+		lastScene = makeEntity();
 		lastScene.getChildren().add(entity(imageUri, 0, 0).getLastEntity());
 		entities.put(sceneUri, lastScene);
 		return this;
@@ -662,12 +766,14 @@ public abstract class DemoBuilder {
 		image.setCollider(createSchemaCollider(frameUri));
 		image.setUri(frameUri);
 		frame.setRenderer(image);
+        lastModelPiece = frame;
 
 		for (ModelComponent modelComponent : modelEntity.getComponents()) {
 			if (modelComponent instanceof Frames) {
 				frames = ((Frames) modelComponent);
 			} else if (modelComponent instanceof Renderer) {
 				frames = new Frames();
+                lastComponent = frames;
 				frames.setSequence(Frames.Sequence.LINEAR);
 				Frame prevFrame = new Frame();
 				prevFrame.setRenderer((Renderer) modelComponent);
@@ -686,8 +792,6 @@ public abstract class DemoBuilder {
 		}
 
 		frames.getFrames().add(frame);
-
-		lastComponent = frames;
 
 		return this;
 	}
@@ -757,7 +861,7 @@ public abstract class DemoBuilder {
         return this;
     }
 
-	/**
+    /**
 	 * Adds a parallax component to the last entity added to {@link #entities}.
 	 * See {@link #parallax(es.eucm.ead.schema.entities.ModelEntity, float)} for
 	 * more details.
@@ -982,7 +1086,7 @@ public abstract class DemoBuilder {
 		} else if (container instanceof ModelComponent) {
 			((ModelComponent) container).getParameters().add(parameter);
 		}
-		return this;
+        return updateLastModelPiece(parameter);
 	}
 
     /**
@@ -1061,9 +1165,8 @@ public abstract class DemoBuilder {
 	 */
 	public DemoBuilder changeVar(Object container, String variable,
 			String expression) {
-		effect(container,
-				makeChangeVar(variable, expression, ChangeVar.Context.LOCAL));
-		return this;
+        updateLastModelPiece(makeChangeVar(variable, expression, ChangeVar.Context.LOCAL));
+		return effect(container,getLastModelPiece(ChangeVar.class));
 	}
 
 	/**
@@ -1098,22 +1201,23 @@ public abstract class DemoBuilder {
 	 */
 	public DemoBuilder changeVar(Object container, String variable,
 			String expression, ChangeVar.Context context) {
-		effect(container, makeChangeVar(variable, expression, context));
-		return this;
+        updateLastModelPiece(makeChangeVar(variable, expression, context));
+		return effect(container, getLastModelPiece(ChangeVar.class));
 	}
 
     /**
      * Adds a {@link GoScene} effect to the last component created in {@link #entities} that loads the last scene created in {@link #entities}.
      */
     public DemoBuilder goScene(){
-        return effect (makeGoScene());
+        updateLastModelPiece(makeGoScene());
+        return effect (getLastModelPiece(GoScene.class));
     }
 
     /**
      * Adds a {@link GoScene} effect to the last component created in {@link #entities} that loads the last scene stored in path {@code scenePath}.
      */
     public DemoBuilder goScene(String scenePath){
-        return effect(makeGoScene(scenePath));
+        return goScene(getLastComponent(), scenePath);
     }
 
     /**
@@ -1121,14 +1225,15 @@ public abstract class DemoBuilder {
      * For more details on supported container types, see {@link #effect(Object, Effect)}.
      */
     public DemoBuilder goScene(Object container, String scenePath){
-        return effect(container, makeGoScene(scenePath));
+        updateLastModelPiece(makeGoScene(scenePath));
+        return effect(container, getLastModelPiece(GoScene.class));
     }
 
     /**
      * Adds a {@link EndGame} effect to the last component added to {@link #entities}.
      */
     public DemoBuilder endGame(){
-        return effect(getLastComponent(), makeEndGame());
+        return endGame(getLastComponent());
     }
 
     /**
@@ -1136,7 +1241,8 @@ public abstract class DemoBuilder {
      * @param container The object to add this effect to. For a list of supported types, see {@link #effect(Object, Effect)}.
      */
     public DemoBuilder endGame(Object container){
-        return effect(container, makeEndGame());
+        updateLastModelPiece(makeEndGame());
+        return effect(container, getLastModelPiece(EndGame.class));
     }
 
 	/**
@@ -1152,18 +1258,116 @@ public abstract class DemoBuilder {
 	 * Creates an {@link AddComponent} effect with the given {@code target} and
 	 * {@code componentToAdd} and adds it to the given {@code parent} container.
 	 * For container supported types, see
-	 * {@link #effect(Object, es.eucm.ead.schema.effects.Effect)}.
+	 * {@link #effect(Object, Effect)}.
 	 */
 	public DemoBuilder addComponent(Object parent, String target,
 			ModelComponent componentToAdd) {
-		effect(parent, makeAddComponent(target, componentToAdd));
+        updateLastModelPiece(makeAddComponent(target, componentToAdd));
+		effect(parent, getLastModelPiece(AddComponent.class));
 		return this;
 	}
+
+    /**
+     * Adds a new {@link ScriptCall} effect to the last component added to the model with the given expressions as values for the input arguments
+     */
+    public DemoBuilder scriptCall(String... inputArgValues){
+        return scriptCall(getLastComponent(), inputArgValues);
+    }
+
+    /**
+     * Adds a new {@link ScriptCall} effect to the given {@code parent} object with the given expressions as values for the input arguments. For info about supported {@code parent} types, see {@link #effect(Object, Effect)}.
+     */
+    public DemoBuilder scriptCall(Object parent, String... inputArgValues){
+        updateLastModelPiece(makeScriptCall(inputArgValues));
+        return effect(parent, getLastModelPiece(ScriptCall.class));
+    }
+
+    /**
+     * Adds a new {@link Script} with the given input arguments to the last model piece added (which should be a ScriptCall).
+     */
+    public DemoBuilder script(String...inputArgs){
+        return script(getLastModelPiece(), inputArgs);
+    }
+
+    /**
+     * Adds a new {@link Script }with the given input arguments to the given container (which should be a ScriptCall).
+     */
+    public DemoBuilder script(Object container, String...inputArgs){
+        if (container instanceof ScriptCall){
+            updateLastModelPiece(makeScript(inputArgs));
+            ((ScriptCall)container).setScript(getLastModelPiece(Script.class));
+        }
+        return this;
+    }
+
+    /**
+     * Adds a {@link ChangeEntityProperty} effect with the given properties to the last component added to the model
+     * @param property {@link ChangeEntityProperty#property}
+     * @param expression {@link ChangeEntityProperty#expression}
+     */
+    public DemoBuilder changeEntityProperty(String property, String expression){
+        return changeEntityProperty(getLastComponent(), property, expression);
+    }
+
+    /**
+     * Adds a {@link ChangeEntityProperty} effect with the given properties to {@code container} object.
+     * @param container The object to add this effect to. For a list of supported types, see {@link #effect(Object, Effect)}.
+     * @param property {@link ChangeEntityProperty#property}
+     * @param expression {@link ChangeEntityProperty#expression}
+     */
+    public DemoBuilder changeEntityProperty(Object container, String property, String expression){
+        updateLastModelPiece(makeChangeEntityProperty(property, expression));
+        return effect(container, getLastModelPiece(ChangeEntityProperty.class));
+    }
+
+    /**
+     * Sets up the {@link Effect#target} property for the last model piece added, which should be an {@link Effect}. Otherwise, nothing happens.
+     */
+    public DemoBuilder target(String target){
+        return target(getLastModelPiece(), target);
+    }
+
+    /**
+     * Sets up the {@link Effect#target} property for the given {@code container}, which should be an {@link Effect}. Otherwise, nothing happens.
+     */
+    public DemoBuilder target(Object container, String target){
+        if (container instanceof Effect){
+            ((Effect)container).setTarget(target);
+        }
+        return this;
+    }
 
 	// //////////////////////////////////////////////////////////
 	// Methods for making model pieces (do not modify entities)
 	// /////////////////////////////////////////////////////////
-	/**
+    public ModelEntity makeEntity() {
+        return new ModelEntity();
+    }
+
+    /**
+     * Creates a {@link ScriptCall} effect with the given expressions as input argument values.
+     */
+    public ScriptCall makeScriptCall(String... inputArgValues){
+        ScriptCall scriptCall = new ScriptCall();
+        for (String inputArgValue: inputArgValues){
+            scriptCall.getInputArgumentValues().add(inputArgValue);
+        }
+        return scriptCall;
+    }
+
+    /**
+     * Creates a {@link Script} with the given inputArgs
+     */
+    public Script makeScript(String...inputArgs){
+        Script script = new Script();
+        for (String inputArg: inputArgs){
+            script.getInputArguments().add(inputArg);
+        }
+
+        return script;
+    }
+
+    /**
 	 * Creates a {@link ControlStructure} effect of the given type ({@code clazz}
 	 * ) with the given {@code condition}
 	 * 
@@ -1305,7 +1509,7 @@ public abstract class DemoBuilder {
      */
     public GoScene makeGoScene(String sceneToGo){
         GoScene goScene = new GoScene();
-        goScene.setName(sceneToGo);
+        goScene.setSceneId(sceneToGo);
         return goScene;
     }
 
@@ -1326,6 +1530,16 @@ public abstract class DemoBuilder {
      */
     public EndGame makeEndGame(){
         return new EndGame();
+    }
+
+    /**
+     * Creates a {@link ChangeEntityProperty} effect with the given property and expression
+     */
+    public ChangeEntityProperty makeChangeEntityProperty(String property, String expression){
+        ChangeEntityProperty changeEntityProperty = new ChangeEntityProperty();
+        changeEntityProperty.setProperty(property);
+        changeEntityProperty.setExpression(expression);
+        return changeEntityProperty;
     }
 
 	/**
@@ -1459,11 +1673,11 @@ public abstract class DemoBuilder {
 	}
 
 	public enum HorizontalAlign {
-		LEFT, CENTER, RIGHT;
+		LEFT, CENTER, RIGHT, REL_TO_PREVIOUS;
 	}
 
 	public enum VerticalAlign {
-		UP, CENTER, DOWN;
+		UP, CENTER, DOWN, REL_TO_PREVIOUS;
 	}
 
 }
