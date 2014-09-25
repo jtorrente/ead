@@ -96,7 +96,7 @@ public abstract class EditorDemoBuilder extends DemoBuilder {
 	protected GameAssets gameAssets;
 
 	/* To avoid building entities more than once */
-	private boolean built = false;
+	protected boolean built = false;
 
 	/* Convenient container of asset paths - no actual need to use it */
 	protected String[] assets;
@@ -144,7 +144,7 @@ public abstract class EditorDemoBuilder extends DemoBuilder {
 		return collider;
 	}
 
-	private Dimension getImageDimension(String imageUri) {
+	protected Dimension getImageDimension(String imageUri) {
 		return platform.getImageDimension(gameAssets.resolve(imageUri).read());
 	}
 
@@ -211,7 +211,7 @@ public abstract class EditorDemoBuilder extends DemoBuilder {
 	 * Creates the output folder and extracts contents from the zip. Needed
 	 * before building
 	 */
-	private void createOutputFolder() {
+	protected void createOutputFolder() {
 		rootFolder = FileHandle.tempDirectory(root);
 		rootFolder.mkdirs();
 
