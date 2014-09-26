@@ -6,8 +6,7 @@
     },
     "properties": {
         "thumbnail": {
-            "type": "string",
-            "description": "Relative url where the thumbnail for this element is placed"
+            "$ref": "repothumbnail.json"
         },
         "author": {
             "$ref":"repoauthor.json",

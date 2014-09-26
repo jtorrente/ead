@@ -7,8 +7,7 @@
             "description": "Relative path of the zip file in the server that contains the library"
         },
         "thumbnail": {
-            "type": "string",
-            "description": "Relative url where the thumbnail for this resource library is placed"
+            "$ref": "repothumbnail.json"
         },
         "author": {
             "$ref":"repoauthor.json",
