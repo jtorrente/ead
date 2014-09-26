@@ -13,6 +13,10 @@
             "$ref":"repoauthor.json",
             "description": "Information for the author that created the resource"
         },
+        "version":{
+            "type": "number",
+            "description": "An integer value that determines the version"
+        },
         "license": {
             "$ref": "repolicense.json",
             "description": "Information associated to the license of the resource, as provided by the author. Only creative commons and public domain licenses supported."

@@ -21,6 +21,10 @@
                 "description": "Information associated to the licenses of the resources contained in the library"
             }
         },
+        "version":{
+            "type": "number",
+            "description": "An integer value that determines the version"
+        },
         "numberOfElements":{
             "type": "number",
             "description": "The number of resources (objects, characters, etc.) the library contains"
