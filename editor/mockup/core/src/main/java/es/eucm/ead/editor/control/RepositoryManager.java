@@ -63,10 +63,13 @@ import es.eucm.ead.editor.view.builders.gallery.ProjectsView;
 import es.eucm.ead.engine.I18N;
 import es.eucm.ead.engine.assets.Assets;
 import es.eucm.ead.schema.editor.components.GameData;
+import es.eucm.ead.schema.editor.components.Thumbnail;
 import es.eucm.ead.schema.editor.components.repo.I18NString;
 import es.eucm.ead.schema.editor.components.repo.I18NStrings;
+import es.eucm.ead.schema.editor.components.repo.Repo;
 import es.eucm.ead.schema.editor.components.repo.RepoElement;
 import es.eucm.ead.schema.editor.components.repo.RepoLibrary;
+import es.eucm.ead.schema.editor.components.repo.RepoThumbnail;
 import es.eucm.ead.schema.entities.ModelEntity;
 import es.eucm.ead.schemax.GameStructure;
 
@@ -121,7 +124,7 @@ public class RepositoryManager {
 	/**
 	 * Is the root URL of our repository.
 	 */
-	private static final String ROOT_URL = "http://e-adventure.e-ucm.es/repo";
+	private static final String ROOT_URL = "http://e-adventure.e-ucm.es/repo/test";
 
 	/**
 	 * Located at the root folder of our server: {@link #ROOT_URL}. The
@@ -203,7 +206,7 @@ public class RepositoryManager {
 	 *            Object that determines current app settings
 	 * @return The value in the current language, or "" if nothing available
 	 */
-	public static final String i18nString(I18NStrings strings, I18N i18N) {
+	public static String i18nString(I18NStrings strings, I18N i18N) {
 		for (I18NString i18NString : strings.getStrings()) {
 			if (i18NString.getLang().equals(i18N.getLang())) {
 				return i18NString.getValue();
@@ -215,6 +218,55 @@ public class RepositoryManager {
 		}
 
 		return "";
+	}
+
+	public static int thumbnailWidth(RepoThumbnail repoThumbnail) {
+		Thumbnail selectedThumbnail = thumbnail(repoThumbnail);
+		if (selectedThumbnail != null) {
+			return Math.round(selectedThumbnail.getWidth());
+		} else {
+			return -1;
+		}
+	}
+
+	public static String thumbnailPath(RepoThumbnail repoThumbnail) {
+		Thumbnail selectedThumbnail = thumbnail(repoThumbnail);
+		if (selectedThumbnail != null) {
+			return selectedThumbnail.getThumbnail();
+		} else {
+			return null;
+		}
+	}
+
+	public static Thumbnail thumbnail(RepoThumbnail repoThumbnail) {
+		MockupController.Dpi dpi = MockupController.Dpi.getDpi();
+		int max = 512;
+		if (dpi == MockupController.Dpi.XHDPI) {
+			max = 512;
+		} else if (dpi == MockupController.Dpi.HDPI) {
+			max = 256;
+		} else if (dpi == MockupController.Dpi.MDPI) {
+			max = 150;
+		} else if (dpi == MockupController.Dpi.LDPI) {
+			max = 150;
+		}
+
+		Thumbnail selectedThumbnail = null;
+		int selectedThumbnailWidth = -1;
+		for (Thumbnail thumbnail : repoThumbnail.getThumbnails()) {
+			if (thumbnail.getWidth() < max && thumbnail.getThumbnail() != null
+					&& thumbnail.getThumbnail().length() > 0
+					&& thumbnail.getWidth() > selectedThumbnailWidth) {
+				selectedThumbnail = thumbnail;
+				selectedThumbnailWidth = Math.round(thumbnail.getWidth());
+			}
+		}
+
+		if (selectedThumbnail == null && repoThumbnail.getThumbnails().size > 0) {
+			selectedThumbnail = repoThumbnail.getThumbnails().get(0);
+		}
+
+		return selectedThumbnail;
 	}
 
 	/**
@@ -347,7 +399,8 @@ public class RepositoryManager {
 		}
 		if (elem != null && copyThumbnailToProject) {
 			RepoElement repoElem = Q.getComponent(elem, RepoElement.class);
-			String thumbnailName = repoElem.getThumbnail();
+			Thumbnail selectedThumbnail = thumbnail(repoElem.getThumbnail());
+			String thumbnailName = thumbnailPath(repoElem.getThumbnail());
 			if (thumbnailName != null && !thumbnailName.isEmpty()) {
 				// We also must copy the thumbnail from the online
 				// repository to our project
@@ -376,7 +429,14 @@ public class RepositoryManager {
 								+ child.extension());
 					}
 
-					repoElem.setThumbnail(child.name());
+					RepoThumbnail newRepoThumbnail = new RepoThumbnail();
+					Thumbnail newThumbnail = new Thumbnail();
+					newThumbnail.setThumbnail(child.name());
+					newThumbnail.setWidth(selectedThumbnail.getWidth());
+					newThumbnail.setHeight(selectedThumbnail.getHeight());
+					newRepoThumbnail.getThumbnails().add(newThumbnail);
+
+					repoElem.setThumbnail(newRepoThumbnail);
 
 					thumbnail.copyTo(child);
 				}
@@ -671,7 +731,8 @@ public class RepositoryManager {
 			Controller controller) {
 		EditorGameAssets gameAssets = controller.getEditorGameAssets();
 
-		String libThumbnail = library.getThumbnail();
+		String libThumbnail = thumbnailPath(library.getThumbnail());
+		;
 
 		if (libThumbnail == null) {
 			listener.thumbnailAvailable(null, controller);
@@ -741,11 +802,11 @@ public class RepositoryManager {
 	 */
 	public interface OnThumbnailAvailableListener {
 		/**
-		 * Invoked when the thumbnail is locally available.
+		 * Invoked when the thumbnailPath is locally available.
 		 * 
 		 * @param thumbnailPath
-		 *            (absolute path to the thumbnail) may be null, if something
-		 *            went wrong.
+		 *            (absolute path to the thumbnailPath) may be null, if
+		 *            something went wrong.
 		 * @param controller
 		 */
 		void thumbnailAvailable(String thumbnailPath, Controller controller);
@@ -841,14 +902,13 @@ public class RepositoryManager {
 			final Controller controller, String jsonString,
 			final EditorGameAssets gameAssets) {
 		try {
-			final Array<String> libraryPaths = gameAssets.fromJson(Array.class,
-					jsonString);
+			final Repo repo = gameAssets.fromJson(Repo.class, jsonString);
 			libraries.clear();
 			final boolean[] failed = { false };
 			final int[] nProcessed = { 0 };
 
-			for (int i = 0; i < libraryPaths.size; i++) {
-				final String libraryPath = libraryPaths.get(i);
+			for (int i = 0; i < repo.getLibraries().size; i++) {
+				final String libraryPath = repo.getLibraries().get(i).getPath();
 				if (!loadLibraryMetadataFromLocal(controller, libraryPath)) {
 					String libraryJsonUrl = libraryPath.startsWith("/")
 							|| libraryPath.startsWith("\\") ? ROOT_URL
@@ -894,7 +954,8 @@ public class RepositoryManager {
 											libraryMetadata, libraryPath,
 											gameAssets)) {
 										nProcessed[0] = nProcessed[0] + 1;
-										if (nProcessed[0] >= libraryPaths.size) {
+										if (nProcessed[0] >= repo
+												.getLibraries().size) {
 											progressListener.finished(
 													!failed[0], controller);
 										}
@@ -912,7 +973,7 @@ public class RepositoryManager {
 												t);
 									failed[0] = true;
 									nProcessed[0] = nProcessed[0] + 1;
-									if (nProcessed[0] >= libraryPaths.size) {
+									if (nProcessed[0] >= repo.getLibraries().size) {
 										progressListener.finished(!failed[0],
 												controller);
 									}
@@ -925,7 +986,7 @@ public class RepositoryManager {
 											"HTTP request cancelled-library not retrieved");
 									failed[0] = true;
 									nProcessed[0] = nProcessed[0] + 1;
-									if (nProcessed[0] >= libraryPaths.size) {
+									if (nProcessed[0] >= repo.getLibraries().size) {
 										progressListener.finished(!failed[0],
 												controller);
 									}
@@ -934,7 +995,7 @@ public class RepositoryManager {
 							});
 				} else {
 					nProcessed[0] = nProcessed[0] + 1;
-					if (nProcessed[0] >= libraryPaths.size) {
+					if (nProcessed[0] >= repo.getLibraries().size) {
 						progressListener.finished(!failed[0], controller);
 					}
 				}
@@ -949,7 +1010,7 @@ public class RepositoryManager {
 
 	/**
 	 * 
-	 * @param library
+	 * @param libraryPath
 	 * @return
 	 */
 	public FileHandle getRepoLibraryFile(String libraryPath, Assets assets) {

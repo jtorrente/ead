@@ -12,8 +12,8 @@
                         "description":"The relative location of the library in the repo, with no extension (e.g. eadventure)"
                     },
                     "version":{
-                        "type": "number",
-                        "description": "An integer value that determines the version"
+                        "type": "string",
+                        "description": "An integer value that determines the version, generated from date: YYYYMMDDHH (e.g. 2014092713)"
                     }
                 }
             },

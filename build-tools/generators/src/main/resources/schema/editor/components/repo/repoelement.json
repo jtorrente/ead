@@ -13,8 +13,8 @@
             "description": "Information for the author that created the resource"
         },
         "version":{
-            "type": "number",
-            "description": "An integer value that determines the version"
+            "type": "string",
+            "description": "An integer value that determines the version, generated from date: YYYYMMDDHH (e.g. 2014092713)"
         },
         "license": {
             "$ref": "repolicense.json",

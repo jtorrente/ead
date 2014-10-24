@@ -69,9 +69,11 @@ public class RepositoryItem extends InfoGalleryItem implements
 		((Label) name).setText(getSimpleName());
 
 		ApplicationAssets assets = controller.getApplicationAssets();
-		assets.get(((MockupController) controller).getRepositoryManager()
-				.getCurrentLibraryPath() + repoElement.getThumbnail(),
-				Texture.class, this);
+		assets.get(
+				((MockupController) controller).getRepositoryManager()
+						.getCurrentLibraryPath()
+						+ RepositoryManager.thumbnailPath(repoElement
+								.getThumbnail()), Texture.class, this);
 	}
 
 	@Override

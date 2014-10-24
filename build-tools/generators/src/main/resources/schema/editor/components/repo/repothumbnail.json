@@ -5,18 +5,7 @@
         "thumbnails": {
             "type": "array",
             "items": {
-                "type":"object",
-                "properties":{
-                    "width":{
-                        "type":"number"
-                    },
-                    "height":{
-                        "type":"number"
-                    },
-                    "path":{
-                        "type":"string"
-                    }
-                }
+                "$ref":"../thumbnail.json"
             }
         }
    },

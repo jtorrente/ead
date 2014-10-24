@@ -73,16 +73,20 @@ public class MockupController extends Controller {
 			return maxDpi;
 		}
 
-		private static String getDpi() {
+		public static Dpi getDpi() {
 			float screenDpi = Gdx.graphics.getDensity() * 160F;
 			Dpi[] values = Dpi.values();
 			for (int i = 0; i < values.length; ++i) {
 				Dpi dpi = values[i];
 				if (screenDpi <= dpi.maxDpi) {
-					return dpi.dpi;
+					return dpi;
 				}
 			}
-			return XHDPI.dpi;
+			return XHDPI;
+		}
+
+		public static String getDpiString() {
+			return getDpi().dpi;
 		}
 	}
 
@@ -166,7 +170,7 @@ public class MockupController extends Controller {
 
 	@Override
 	protected ApplicationAssets createApplicationAssets(Files files) {
-		String dpi = Dpi.getDpi();
+		String dpi = Dpi.getDpiString();
 		mockupDpiPath = "skins/mockup-" + dpi + "/";
 		return new ApplicationAssets(files, mockupDpiPath + "skin");
 	}
