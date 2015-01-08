@@ -316,6 +316,7 @@
         <profile>
             <id>run-editor</id>
             <modules>
+                <module>common-utils</module>
                 <module>engine/schema</module>
                 <module>editor/schema</module>
                 <module>engine/core</module>
@@ -342,6 +343,7 @@
                 <module>build-tools/maven</module>
                 <module>build-tools/maven-gitlog-plugin-ext</module>
                 <module>build-tools/android</module>
+                <module>common-utils</module>
                 <module>engine/schema</module>
                 <module>engine/core</module>
                 <module>engine/desktop</module>
@@ -387,6 +389,7 @@
         <profile>
             <id>mokap-android</id>
             <modules>
+                <module>common-utils</module>
                 <module>engine/schema</module>
                 <module>engine/core</module>
                 <module>editor/mokap/core</module>
@@ -396,6 +399,7 @@
         <profile>
             <id>mokap</id>
             <modules>
+                <module>common-utils</module>
                 <module>engine/schema</module>
                 <module>engine/core</module>
                 <module>editor/core</module>

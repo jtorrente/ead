@@ -68,6 +68,7 @@ import es.eucm.ead.schemax.FieldName;
 import es.eucm.ead.schemax.ModelStructure;
 import es.eucm.ead.schemax.JsonExtension;
 import es.eucm.ead.schemax.Layer;
+import es.eucm.ead.utils.BinaryReferenceUtils;
 import org.apache.maven.shared.invoker.*;
 
 import javax.imageio.ImageIO;
@@ -81,6 +82,12 @@ import javax.imageio.ImageIO;
 public class Exporter {
 
 	private static final String INIT_BEHAVIOR_ID = "initBehavior";
+
+	/**
+	 * All components belonging to this package are ignored when the game is
+	 * exported
+	 */
+	private static final String EDITOR_COMPONENTS_PACKAGE = "es.eucm.ead.schema.editor.components";
 
 	/**
 	 * Builds a {@link Behavior} component with just one {@link Init} behavior
@@ -199,12 +206,6 @@ public class Exporter {
 			components.add(initBehavior);
 		}
 	}
-
-	/**
-	 * All components belonging to this package are ignored when the game is
-	 * exported
-	 */
-	private static final String EDITOR_COMPONENTS_PACKAGE = "es.eucm.ead.schema.editor.components";
 
 	/**
 	 * Used for reading and writing game.json and scene.json files. When the
@@ -659,6 +660,7 @@ public class Exporter {
 				createInitComponent((ModelEntity) currentEntity);
 				// Remove all editor components
 				currentEntity = cloneEntityExcludingEditorComponents((ModelEntity) currentEntity);
+				BinaryReferenceUtils.listRefBinaries(currentEntity);
 			}
 			FileHandle entityFile = destiny.child(currentEntry.getKey());
 			entityFile.parent().mkdirs();

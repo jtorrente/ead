@@ -44,7 +44,6 @@ import es.eucm.ead.editor.demobuilder.EditorDemoBuilder;
 import es.eucm.ead.editor.demobuilder.ImgUtils;
 import es.eucm.ead.editor.exporter.ExportCallback;
 import es.eucm.ead.editor.exporter.Exporter;
-import es.eucm.ead.editor.utils.ProjectUtils;
 import es.eucm.ead.engine.utils.ZipUtils;
 import es.eucm.ead.schema.components.ModelComponent;
 import es.eucm.ead.schema.data.Dimension;
@@ -56,6 +55,7 @@ import es.eucm.ead.schema.editor.components.repo.licenses.DefaultLicenses;
 import es.eucm.ead.schema.effects.GoScene;
 import es.eucm.ead.schema.entities.ModelEntity;
 import es.eucm.ead.schema.renderers.*;
+import es.eucm.ead.utils.BinaryReferenceUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -408,7 +408,7 @@ public abstract class RepoLibraryBuilder extends EditorDemoBuilder {
 	private FileHandle exportElement(ModelEntity modelEntity,
 			FileHandle outputFH) {
 		// Make a list of all binaries referenced by this modelEntity
-		Array<String> binaryPaths = ProjectUtils.listRefBinaries(modelEntity);
+		Array<String> binaryPaths = BinaryReferenceUtils.listRefBinaries(modelEntity);
 		// Copy all binaries to a temp folder
 		FileHandle tempFolder = FileHandle.tempDirectory("modelentity");
 		tempFolder.mkdirs();

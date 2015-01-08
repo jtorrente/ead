@@ -34,9 +34,10 @@
  *      You should have received a copy of the GNU Lesser General Public License
  *      along with eAdventure.  If not, see <http://www.gnu.org/licenses/>.
  */
-package es.eucm.ead.editor.utils;
+package es.eucm.ead.utils;
 
 import com.badlogic.gdx.utils.Array;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,12 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Created by jtorrente on 26/11/14.
  */
-public class ProjectUtilsTest {
+public class BinaryReferenceUtilsTest {
 
 	private static Array<String> buildUris() {
 		return new Array<String>(new String[] { "images/image1.png",
@@ -66,7 +65,7 @@ public class ProjectUtilsTest {
 		Array<String> uris = buildUris();
 		// Create a simple object
 		BinRefContainer binRefContainer = new BinRefContainer(uris);
-		Array<String> binaryReferences = ProjectUtils
+		Array<String> binaryReferences = BinaryReferenceUtils
 				.listRefBinaries(binRefContainer);
 		for (int i = 0; i < uris.size; i++) {
 			String current = uris.get(i);
@@ -80,8 +79,8 @@ public class ProjectUtilsTest {
 				}
 			}
 		}
-		assertEquals(0, uris.size);
-		assertEquals(0, binaryReferences.size);
+		Assert.assertEquals(0, uris.size);
+		Assert.assertEquals(0, binaryReferences.size);
 	}
 
 	@Test
@@ -92,22 +91,27 @@ public class ProjectUtilsTest {
 		Array<String> uris = buildUris();
 		// Create a simple object
 		BinRefContainer binRefContainer = new BinRefContainer(uris);
-		ProjectUtils
-				.replaceBinaryRef(binRefContainer, "A test", "Another test");
-		assertEquals(binRefContainer.notAnUri, "Another test");
+		BinaryReferenceUtils.replaceBinaryRef(binRefContainer, "A test",
+				"Another test");
+		Assert.assertEquals(binRefContainer.notAnUri, "Another test");
 		String str = "simple test";
-		ProjectUtils.replaceBinaryRef(binRefContainer, uris.get(2), str);
-		ProjectUtils.replaceBinaryRef(binRefContainer, uris.get(3), str);
-		ProjectUtils.replaceBinaryRef(binRefContainer, uris.get(4), str);
-		ProjectUtils.replaceBinaryRef(binRefContainer, uris.get(5), str);
-		ProjectUtils.replaceBinaryRef(binRefContainer, uris.get(6), str);
-		assertEquals(binRefContainer.refHolder.uri, str);
-		assertEquals(binRefContainer.list.get(0).uri, str);
-		assertEquals(binRefContainer.list.get(1).uri, str);
-		assertEquals(binRefContainer.array.get(0).uri, str);
-		assertEquals(binRefContainer.array.get(1).uri, uris.get(0));
-		assertEquals(binRefContainer.uriMap.get("uri1"), str);
-		assertEquals(binRefContainer.uriMap.get("uri2"), uris.get(7));
+		BinaryReferenceUtils
+				.replaceBinaryRef(binRefContainer, uris.get(2), str);
+		BinaryReferenceUtils
+				.replaceBinaryRef(binRefContainer, uris.get(3), str);
+		BinaryReferenceUtils
+				.replaceBinaryRef(binRefContainer, uris.get(4), str);
+		BinaryReferenceUtils
+				.replaceBinaryRef(binRefContainer, uris.get(5), str);
+		BinaryReferenceUtils
+				.replaceBinaryRef(binRefContainer, uris.get(6), str);
+		Assert.assertEquals(binRefContainer.refHolder.uri, str);
+		Assert.assertEquals(binRefContainer.list.get(0).uri, str);
+		Assert.assertEquals(binRefContainer.list.get(1).uri, str);
+		Assert.assertEquals(binRefContainer.array.get(0).uri, str);
+		Assert.assertEquals(binRefContainer.array.get(1).uri, uris.get(0));
+		Assert.assertEquals(binRefContainer.uriMap.get("uri1"), str);
+		Assert.assertEquals(binRefContainer.uriMap.get("uri2"), uris.get(7));
 	}
 
 	private static class BinRefContainer extends RefContainer {
