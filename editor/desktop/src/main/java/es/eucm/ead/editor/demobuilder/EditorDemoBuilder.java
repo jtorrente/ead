@@ -464,15 +464,6 @@ public abstract class EditorDemoBuilder extends DemoBuilder {
 		return image;
 	}
 
-	protected ShapeRenderer rectangle(int width, int height) {
-		ShapeRenderer shapeRenderer = new ShapeRenderer();
-		Rectangle rectangle = new Rectangle();
-		rectangle.setWidth(width);
-		rectangle.setHeight(height);
-		shapeRenderer.setShape(rectangle);
-		return shapeRenderer;
-	}
-
 	protected Parameter param(String name, String value) {
 		Parameter parameter = new Parameter();
 		parameter.setName(name);

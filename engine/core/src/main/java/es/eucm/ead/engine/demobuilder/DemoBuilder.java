@@ -57,6 +57,7 @@ import es.eucm.ead.schema.components.tweens.ScaleTween;
 import es.eucm.ead.schema.components.tweens.Tween;
 import es.eucm.ead.schema.data.Parameter;
 import es.eucm.ead.schema.data.Script;
+import es.eucm.ead.schema.data.shape.Rectangle;
 import es.eucm.ead.schema.effects.AddComponent;
 import es.eucm.ead.schema.effects.AddEntity;
 import es.eucm.ead.schema.effects.ChangeVar;
@@ -1207,6 +1208,47 @@ public abstract class DemoBuilder {
 		triggerConversation.setNodeId(startingNodeId);
 		triggerConversation.setConversationId(conversationId);
 		return triggerConversation;
+	}
+
+	/**
+	 * Creates a new renderer component which is just a white rectangle
+	 * 
+	 * @param width
+	 *            Rectangle's width
+	 * @param height
+	 *            Rectangle's height
+	 * @return a ShapeRenderer
+	 */
+	public ShapeRenderer makeRectangleRenderer(int width, int height) {
+		return makeRectangleRenderer(null, width, height);
+	}
+
+	/**
+	 * Creates a new renderer component which is just a rectangle with the given
+	 * paint
+	 * 
+	 * @param paint
+	 *            Instructions on how to fill the rectangle. See
+	 *            {@link es.eucm.ead.engine.components.renderers.shape.ShapeToPixmap}
+	 *            for more details on how to build paints. If null, default
+	 *            paint (white) is used.
+	 * @param width
+	 *            Rectangle's width
+	 * @param height
+	 *            Rectangle's height
+	 * @return a ShapeRenderer
+	 */
+	public ShapeRenderer makeRectangleRenderer(String paint, int width,
+			int height) {
+		ShapeRenderer shapeRenderer = new ShapeRenderer();
+		if (paint != null) {
+			shapeRenderer.setPaint(paint);
+		}
+		Rectangle rectangle = new Rectangle();
+		rectangle.setWidth(width);
+		rectangle.setHeight(height);
+		shapeRenderer.setShape(rectangle);
+		return shapeRenderer;
 	}
 
 	/**

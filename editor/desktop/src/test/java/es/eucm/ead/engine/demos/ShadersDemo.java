@@ -61,7 +61,7 @@ public class ShadersDemo extends EditorDemoBuilder {
 		ModelEntity scene = singleSceneGame(null, 800, 600).getLastScene();
 
 		ModelEntity rectangle = new ModelEntity();
-		rectangle.getComponents().add(rectangle(400, 300));
+		rectangle.getComponents().add(makeRectangleRenderer(400, 300));
 		scene.getChildren().add(rectangle);
 
 		Shader shader = new Shader();
@@ -75,7 +75,7 @@ public class ShadersDemo extends EditorDemoBuilder {
 		rectangle.getComponents().add(shader);
 
 		rectangle = new ModelEntity();
-		rectangle.getComponents().add(rectangle(400, 300));
+		rectangle.getComponents().add(makeRectangleRenderer(400, 300));
 		rectangle.setX(400);
 
 		shader = new Shader();
@@ -88,7 +88,7 @@ public class ShadersDemo extends EditorDemoBuilder {
 		scene.getChildren().add(rectangle);
 
 		rectangle = new ModelEntity();
-		rectangle.getComponents().add(rectangle(400, 300));
+		rectangle.getComponents().add(makeRectangleRenderer(400, 300));
 		rectangle.setY(300);
 
 		shader = new Shader();
@@ -104,7 +104,7 @@ public class ShadersDemo extends EditorDemoBuilder {
 		scene.getChildren().add(rectangle);
 
 		rectangle = new ModelEntity();
-		rectangle.getComponents().add(rectangle(400, 300));
+		rectangle.getComponents().add(makeRectangleRenderer(400, 300));
 		rectangle.setX(400);
 		rectangle.setY(300);
 
