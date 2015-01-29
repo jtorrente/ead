@@ -66,12 +66,7 @@ import es.eucm.ead.schema.effects.SetViewport;
 import es.eucm.ead.schema.effects.TriggerConversation;
 import es.eucm.ead.schema.effects.controlstructures.ControlStructure;
 import es.eucm.ead.schema.entities.ModelEntity;
-import es.eucm.ead.schema.renderers.Frame;
-import es.eucm.ead.schema.renderers.Frames;
-import es.eucm.ead.schema.renderers.Image;
-import es.eucm.ead.schema.renderers.Renderer;
-import es.eucm.ead.schema.renderers.State;
-import es.eucm.ead.schema.renderers.States;
+import es.eucm.ead.schema.renderers.*;
 import es.eucm.ead.schemax.ModelStructure;
 
 import java.util.HashMap;
@@ -240,14 +235,34 @@ public abstract class DemoBuilder {
 	/**
 	 * Creates a game with just one scene configured with the given
 	 * {@code backgroundUri} image. The size of the screen (game width and
-	 * height) is determined automatically from the size of the image.
+	 * height) are passed as arguments.
 	 * 
 	 * @param backgroundUri
 	 *            Relative uri of the background image of the scene
+	 * @param width
+	 *            game's width
+	 * @param height
+	 *            game's height
 	 */
 	public DemoBuilder singleSceneGame(String backgroundUri, int width,
 			int height) {
 		game(width, height).scene(backgroundUri);
+		return this;
+	}
+
+	/**
+	 * Creates a game with just one scene with a plain white background. The
+	 * size of the screen (game width and height) are passed as arguments.
+	 * 
+	 * @param width
+	 *            game's width
+	 * @param height
+	 *            game's height
+	 */
+	public DemoBuilder singleSceneGame(int width, int height) {
+		game(width, height).scene(null);
+		getLastScene().getComponents()
+				.add(makeRectangleRenderer(width, height));
 		return this;
 	}
 
