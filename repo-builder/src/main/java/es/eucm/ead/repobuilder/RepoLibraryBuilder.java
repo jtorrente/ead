@@ -812,6 +812,13 @@ public abstract class RepoLibraryBuilder extends ExecutableDemoBuilder {
 		return this;
 	}
 
+	public RepoLibraryBuilder editable(boolean editable) {
+		if (lastElement != null) {
+			lastElement.setEditable(editable);
+		}
+		return this;
+	}
+
 	public RepoLibraryBuilder tag(RepoTags tag) {
 		return tag(tag.toString());
 	}
