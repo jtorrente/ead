@@ -48,15 +48,11 @@ import es.eucm.ead.schema.components.behaviors.Event;
 import es.eucm.ead.schema.components.behaviors.events.Init;
 import es.eucm.ead.schema.components.behaviors.events.Timer;
 import es.eucm.ead.schema.components.behaviors.events.Touch;
+import es.eucm.ead.schema.components.controls.Label;
 import es.eucm.ead.schema.components.conversation.Conversation;
 import es.eucm.ead.schema.components.conversation.EffectsNode;
 import es.eucm.ead.schema.components.positiontracking.Parallax;
-import es.eucm.ead.schema.components.tweens.AlphaTween;
-import es.eucm.ead.schema.components.tweens.FieldTween;
-import es.eucm.ead.schema.components.tweens.MoveTween;
-import es.eucm.ead.schema.components.tweens.RotateTween;
-import es.eucm.ead.schema.components.tweens.ScaleTween;
-import es.eucm.ead.schema.components.tweens.Tween;
+import es.eucm.ead.schema.components.tweens.*;
 import es.eucm.ead.schema.components.tweens.Tween.EaseEquation;
 import es.eucm.ead.schema.components.tweens.Tween.EaseType;
 import es.eucm.ead.schema.data.Color;
@@ -325,6 +321,28 @@ public abstract class DemoBuilder {
 		return this;
 	}
 
+	/**
+	 * Creates an entity that visualizes the given {@code text} with the given
+	 * {@code color} (using a Label component) and adds it to the given
+	 * {@code parent} entity at the given {@code x,y position}.
+	 */
+	public DemoBuilder textEntity(ModelEntity parent, String text, Color color,
+			float x, float y) {
+		ModelEntity newEntity = entity(parent, x, y).getLastEntity();
+		lastComponent = makeLabel(text, color);
+		newEntity.getComponents().add(lastComponent);
+		return this;
+	}
+
+	/**
+	 * Creates an entity that visualizes the given {@code text} with the given
+	 * {@code color} (using a Label component) and adds it to the last entity at
+	 * the given {@code x,y position}.
+	 */
+	public DemoBuilder textEntity(String text, Color color, float x, float y) {
+		return textEntity(getLastEntity(), text, color, x, y);
+	}
+
 	public DemoBuilder libraryEntity(String entityId) {
 		lastEntity = new ModelEntity();
 		entities.put(LIBRARY_PATH + entityId + "/"
@@ -519,15 +537,23 @@ public abstract class DemoBuilder {
 		return blinkFrameAnimation(parent, 4F, 0.1F, frames);
 	}
 
-	public DemoBuilder scale(float scale) {
-		getLastEntity().setScaleX(scale);
-		getLastEntity().setScaleY(scale);
+	public DemoBuilder scale(ModelEntity parent, float scale) {
+		parent.setScaleX(scale);
+		parent.setScaleY(scale);
 		return this;
 	}
 
-	public DemoBuilder rotation(float rotation) {
-		getLastEntity().setRotation(rotation);
+	public DemoBuilder rotation(ModelEntity parent, float rotation) {
+		parent.setRotation(rotation);
 		return this;
+	}
+
+	public DemoBuilder scale(float scale) {
+		return scale(getLastEntity(), scale);
+	}
+
+	public DemoBuilder rotation(float rotation) {
+		return rotation(getLastEntity(), rotation);
 	}
 
 	/**
@@ -1336,14 +1362,178 @@ public abstract class DemoBuilder {
 		return goScene;
 	}
 
-	public DemoBuilder color(float r, float g, float b, float a) {
-		Color color = new Color();
-		color.setR(r);
-		color.setG(g);
-		color.setB(b);
-		color.setA(a);
-		getLastEntity().setColor(color);
+	/**
+	 * Makes the given {@code parent} entity inivisble by setting it's alpha
+	 * value to 0
+	 */
+	public DemoBuilder invisibleAlpha(ModelEntity parent) {
+		return color(parent, 1.0F, 1.0F, 1.0F, 0.0F);
+	}
+
+	/**
+	 * Applies to the given {@code parent} entity the typical setup for entrance
+	 * animations in which the entity starts from alpha=0 and scale = 0
+	 */
+	public DemoBuilder invisibleAlphaSizeZero(ModelEntity parent) {
+		invisibleAlpha(parent);
+		scale(parent, 0F);
 		return this;
+	}
+
+	/**
+	 * Equivalent to {@code invisibleAlphaSizeZero(getLastEntity())}
+	 */
+	public DemoBuilder invisibleAlphaSizeZero() {
+		return invisibleAlphaSizeZero(getLastEntity());
+	}
+
+	/**
+	 * Makes the given {@code parent} entity visble by setting it's alpha value
+	 * to 1
+	 */
+	public DemoBuilder visibleAlpha(ModelEntity parent) {
+		return color(parent, 1.0F, 1.0F, 1.0F, 1.0F);
+	}
+
+	/**
+	 * Equivalent to {@code invisibleAlpha(getLastEntity())}
+	 */
+	public DemoBuilder invisibleAlpha() {
+		return color(getLastEntity(), 1.0F, 1.0F, 1.0F, 0.0F);
+	}
+
+	/**
+	 * Equivalent to {@code visibleAlpha(getLastEntity())}
+	 */
+	public DemoBuilder visibleAlpha() {
+		return color(getLastEntity(), 1.0F, 1.0F, 1.0F, 1.0F);
+	}
+
+	/**
+	 * Sets up the given {@code parent} entity with an entrance animation that
+	 * scales the entity Up and increases its alpha from and to the desired
+	 * values.
+	 * 
+	 * @param parent
+	 *            The entity to set up with entrance animation
+	 * @param editor
+	 *            If this parameter is set to true, the entity will be
+	 *            configured so its scale and alpha are not modified directly.
+	 *            This allows the entity to be properly displayed in Mokap
+	 *            editor. There's a tradeoff in performance, as then when the
+	 *            animation is executed it has to be scaled down and faded out
+	 *            with a tween to the desired initial values, which may cause a
+	 *            little flickering. If {@code editor} is false, then the
+	 *            initial state (scale, alpha) is set using the entity's
+	 *            properties instead of using a tween. It looks better in the
+	 *            engine, but makes the entity invisible in the editor (and
+	 *            therefore, uneditable).
+	 * @param duration
+	 *            The length of the animation, in seconds. Typical values are
+	 *            0.3-0.6 seconds
+	 * @param delay
+	 *            Time before the animation starts. Typical values are 0.1-0.2
+	 *            seconds
+	 * @param initAlpha
+	 *            Initial value of alpha, from 0 (invisible) to 1 (opaque)
+	 * @param initScaleX
+	 *            Initial value of scaleX
+	 * @param initScaleY
+	 *            Initial value of scaleY
+	 * @param endAlpha
+	 *            End value of alpha, from 0 (invisible) to 1 (opaque)
+	 * @param endScaleX
+	 *            End value of scaleX
+	 * @param endScaleY
+	 *            End value of scaleY
+	 */
+	public DemoBuilder scaleUpAlphaEntranceAnimation(ModelEntity parent,
+			boolean editor, float duration, float delay, float initAlpha,
+			float initScaleX, float initScaleY, float endAlpha,
+			float endScaleX, float endScaleY) {
+		Timeline timeline = new Timeline();
+		timeline.setMode(Timeline.Mode.PARALLEL);
+		if (editor) {
+			timeline.getChildren().add(
+					makeTween(AlphaTween.class, 0F, 0, 0F, false, 0F, false,
+							Tween.EaseEquation.SINE, Tween.EaseType.IN,
+							initAlpha, null, null, null));
+			timeline.getChildren().add(
+					makeTween(ScaleTween.class, 0F, 0, 0F, false, 0F, false,
+							Tween.EaseEquation.LINEAR, Tween.EaseType.INOUT,
+							initScaleX, initScaleY, null, null));
+		} else {
+			invisibleAlphaSizeZero(parent);
+		}
+		timeline.getChildren().add(
+				makeTween(AlphaTween.class, delay, 0, 0F, false, duration,
+						false, Tween.EaseEquation.SINE, Tween.EaseType.IN,
+						endAlpha, null, null, null));
+		timeline.getChildren().add(
+				makeTween(ScaleTween.class, delay, 0, 0F, false, duration,
+						false, Tween.EaseEquation.LINEAR, Tween.EaseType.INOUT,
+						endScaleX, endScaleY, null, null));
+		parent.getComponents().add(timeline);
+		lastComponent = timeline;
+		return this;
+	}
+
+	/**
+	 * Sets up the given {@code parent} entity with an entrance animation that
+	 * scales the entity Up and increases its alpha from 0 to 1. Equivalent to
+	 * {@code scaleUpAlphaEntranceAnimation(parent, editor, 0.35F, 0.1F, 0F, 0F, 0F, 1F, 1F, 1F)}
+	 * 
+	 * @param parent
+	 *            The entity to animate
+	 * @param editor
+	 *            If this parameter is set to true, the entity will be
+	 *            configured so its scale and alpha are not modified directly.
+	 *            This allows the entity to be properly displayed in Mokap
+	 *            editor. There's a tradeoff in performance, as then when the
+	 *            animation is executed it has to be scaled down and faded out
+	 *            with a tween to the desired initial values, which may cause a
+	 *            little flickering. If {@code editor} is false, then the
+	 *            initial state (scale, alpha) is set using the entity's
+	 *            properties instead of using a tween. It looks better in the
+	 *            engine, but makes the entity invisible in the editor (and
+	 *            therefore, uneditable).
+	 */
+	public DemoBuilder scaleUpAlphaEntranceAnimation(ModelEntity parent,
+			boolean editor) {
+		return scaleUpAlphaEntranceAnimation(parent, editor, 0.35F, 0.1F, 0F,
+				0F, 0F, 1F, 1F, 1F);
+	}
+
+	/**
+	 * Sets up the last entity added with an entrance animation that scales the
+	 * entity Up and increases its alpha from 0 to 1. Equivalent to
+	 * {@code scaleUpAlphaEntranceAnimation(parent, editor)}
+	 * 
+	 * @param editor
+	 *            If this parameter is set to true, the entity will be
+	 *            configured so its scale and alpha are not modified directly.
+	 *            This allows the entity to be properly displayed in Mokap
+	 *            editor. There's a tradeoff in performance, as then when the
+	 *            animation is executed it has to be scaled down and faded out
+	 *            with a tween to the desired initial values, which may cause a
+	 *            little flickering. If {@code editor} is false, then the
+	 *            initial state (scale, alpha) is set using the entity's
+	 *            properties instead of using a tween. It looks better in the
+	 *            engine, but makes the entity invisible in the editor (and
+	 *            therefore, uneditable).
+	 */
+	public DemoBuilder scaleUpAlphaEntranceAnimation(boolean editor) {
+		return scaleUpAlphaEntranceAnimation(getLastEntity(), editor);
+	}
+
+	public DemoBuilder color(ModelEntity parent, float r, float g, float b,
+			float a) {
+		parent.setColor(makeColor(r, g, b, a));
+		return this;
+	}
+
+	public DemoBuilder color(float r, float g, float b, float a) {
+		return color(getLastEntity(), r, g, b, a);
 	}
 
 	public DemoBuilder emptyRectangle(int width, int height) {
@@ -1440,6 +1630,37 @@ public abstract class DemoBuilder {
 		}
 		spine.setUri(uri);
 		return spine;
+	}
+
+	public Color makeColor(float r, float g, float b, float a) {
+		Color color = new Color();
+		color.setR(r);
+		color.setG(g);
+		color.setB(b);
+		color.setA(a);
+		return color;
+	}
+
+	public Color makeColor(java.awt.Color javaColor) {
+		float[] comp = javaColor.getRGBComponents(null);
+		return makeColor(comp[0], comp[1], comp[2], comp[3]);
+	}
+
+	/**
+	 * Creates a label component to show a string
+	 * 
+	 * @param text
+	 *            The text to be shown
+	 * @param color
+	 *            The color of the text
+	 */
+	public Label makeLabel(String text, Color color) {
+		Label label = new Label();
+		label.setText(text);
+		if (color != null) {
+			label.setColor(color);
+		}
+		return label;
 	}
 
 	/**
