@@ -94,7 +94,8 @@ public enum RepoTags {
 			+ RepoLibraryBuilder.I18N_SEPARATOR + "hablar"
 			+ RepoLibraryBuilder.MAIN_SEPARATOR + "use"
 			+ RepoLibraryBuilder.I18N_SEPARATOR + "usar"), TYPE_OBJECT(
-			"object", "objeto"), TYPE_BACKGROUND("background", "fondo");
+			"object", "objeto"), TYPE_BACKGROUND("background", "fondo"), TYPE_GUI(
+			"gui", "interfa");
 
 	private String tag;
 
