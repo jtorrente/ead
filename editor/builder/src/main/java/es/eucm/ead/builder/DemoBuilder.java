@@ -74,6 +74,8 @@ import es.eucm.ead.schema.effects.GoScene.Transition;
 import es.eucm.ead.schema.effects.controlstructures.ControlStructure;
 import es.eucm.ead.schema.effects.controlstructures.IfThenElseIf;
 import es.eucm.ead.schema.effects.controlstructures.ScriptCall;
+import es.eucm.ead.schema.engine.components.PersistentGameState;
+import es.eucm.ead.schema.engine.components.PersistentVariable;
 import es.eucm.ead.schema.entities.ModelEntity;
 import es.eucm.ead.schema.renderers.*;
 import es.eucm.ead.schemax.ModelStructure;
@@ -1741,6 +1743,35 @@ public abstract class DemoBuilder {
 		ScriptCall scriptCall = new ScriptCall();
 		scriptCall.setScript(script);
 		return scriptCall;
+	}
+
+	/**
+	 * Makes a {@link PersistentGameState} component that will make the given list of global variables persistent across executions.
+	 * If any of these variables have not been registered in the VariablesManager when this component is processed, it will be initialized as an integer variable with value 0.
+	 *
+	 * Since only one component of this type is processed per gameplay, it is recommended to use {@link #persistentGameState(String...)} instead.
+	 * @param variables The list of global variables to make persistent
+	 * @return The component
+	 */
+	public PersistentGameState makePersistentGameState(String...variables){
+		PersistentGameState persistentGameState = new PersistentGameState();
+		for (String variable: variables) {
+			PersistentVariable persistentVariable = new PersistentVariable();
+			persistentVariable.setInitValue("i0");
+			persistentVariable.setVariable(variable);
+			persistentGameState.getPersistentVariables().add(persistentVariable);
+		}
+		return persistentGameState;
+	}
+
+	/**
+	 * Ensures persistence across executions of the game of the given list of global variables.
+	 * This is done by adding a {@link PersistentGameState} component to the main game entity.
+	 */
+	public DemoBuilder persistentGameState(String...variables) {
+		lastComponent = makePersistentGameState(variables);
+		game.getComponents().add(lastComponent);
+		return this;
 	}
 
 	public DemoBuilder color(float r, float g, float b, float a) {
