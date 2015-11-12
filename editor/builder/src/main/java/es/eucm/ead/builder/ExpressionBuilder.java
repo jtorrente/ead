@@ -187,4 +187,65 @@ public class ExpressionBuilder {
 		return "(layer sSCENE_CONTENT)";
 	}
 
+	public String variableDifferentTo(String var, Number value) {
+		return not(variableEqualsTo(var, value));
+	}
+
+	public String variableDifferentTo(String var, Boolean value) {
+		return not(variableEqualsTo(var, value));
+	}
+
+	public String variableDifferentTo(String variable, String value) {
+		if (value.startsWith("b")){
+			return variableDifferentTo(variable, Boolean.parseBoolean(value.substring(1)));
+		}
+		if (value.startsWith("i")){
+			return variableDifferentTo(variable, Integer.parseInt(value.substring(1)));
+		}
+		if (value.startsWith("f")){
+			return variableDifferentTo(variable, Float.parseFloat(value.substring(1)));
+		}
+		return null;
+	}
+
+	public String or(String... subExpressions){
+		return concat("or", bool(true), subExpressions);
+	}
+
+	public String and(String... subExpressions){
+		return concat("and", bool(false), subExpressions);
+	}
+
+	public String not(String expression){
+		return concat("not", bool(true), expression);
+	}
+
+	private String concat(String op, String defaultValue, String... subExpressions){
+		StringBuilder stringBuilder = new StringBuilder();
+		if (subExpressions.length==0){
+			return defaultValue;
+		}
+		stringBuilder.append("("+op+" ");
+		for (int i=0; i<subExpressions.length; i++) {
+			stringBuilder.append(subExpressions[i]);
+			if (i<subExpressions.length-1){
+				stringBuilder.append(" ");
+			}
+		}
+		stringBuilder.append(")");
+		return stringBuilder.toString();
+	}
+
+	public String bool(boolean value) {
+		if (value) {
+			return "btrue";
+		}
+		return "bfalse";
+	}
+
+	public String thisEntity() {
+		return "$_this";
+	}
+
+
 }

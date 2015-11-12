@@ -41,6 +41,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.reflect.ClassReflection;
 import com.badlogic.gdx.utils.reflect.Field;
 import com.badlogic.gdx.utils.reflect.ReflectionException;
+import es.eucm.ead.schema.assets.Sound;
 import es.eucm.ead.schema.components.ModelComponent;
 import es.eucm.ead.schema.components.Reference;
 import es.eucm.ead.schema.components.Tags;
@@ -72,6 +73,7 @@ import es.eucm.ead.schema.effects.*;
 import es.eucm.ead.schema.effects.ChangeVar.Context;
 import es.eucm.ead.schema.effects.GoScene.Transition;
 import es.eucm.ead.schema.effects.controlstructures.ControlStructure;
+import es.eucm.ead.schema.effects.controlstructures.If;
 import es.eucm.ead.schema.effects.controlstructures.IfThenElseIf;
 import es.eucm.ead.schema.effects.controlstructures.ScriptCall;
 import es.eucm.ead.schema.engine.components.PersistentGameState;
@@ -685,7 +687,7 @@ public abstract class DemoBuilder {
 	 * @param modelEntity
 	 *            The entity to add a frame to
 	 * @param frameUri
-	 *            The relative uri for the image of the frame
+	 *            The relative uri for the image of the frame. If blank or null, then an empty renderer will be created for the frame. This allows for interleaving frames and "blank spaces" in animations.
 	 * @param duration
 	 *            The frame duration
 	 * @param sequence
@@ -698,7 +700,8 @@ public abstract class DemoBuilder {
 
 		Frame frame = new Frame();
 		frame.setTime(duration);
-		frame.setRenderer(createImage(frameUri));
+		Renderer renderer = frameUri!=null && frameUri.length()!=0?createImage(frameUri):makeEmptyRenderer(0, 0, false);
+		frame.setRenderer(renderer);
 
 		for (ModelComponent modelComponent : modelEntity.getComponents()) {
 			if (modelComponent instanceof Frames) {
@@ -1785,14 +1788,19 @@ public abstract class DemoBuilder {
 	}
 
 	public DemoBuilder emptyRectangle(int width, int height, boolean hitAll) {
+		EmptyRenderer emptyRenderer = makeEmptyRenderer(width, height, hitAll);
+		getLastEntity().getComponents().add(emptyRenderer);
+		return this;
+	}
+
+	private EmptyRenderer makeEmptyRenderer(int width, int height, boolean hitAll) {
 		EmptyRenderer emptyRenderer = new EmptyRenderer();
 		Rectangle rectangle = new Rectangle();
 		emptyRenderer.setShape(rectangle);
 		emptyRenderer.setHitAll(hitAll);
 		rectangle.setWidth(width);
 		rectangle.setHeight(height);
-		getLastEntity().getComponents().add(emptyRenderer);
-		return this;
+		return emptyRenderer;
 	}
 
 	public DemoBuilder origin(float originX, float originY) {
@@ -1946,6 +1954,153 @@ public abstract class DemoBuilder {
 	public void initVar(String var, String expression) {
 		initGame.getEffects().add(
 				makeChangeVar(var, expression, Context.GLOBAL));
+	}
+
+	public DemoBuilder entityRandomImage(ModelEntity parent, String prefix, String suffix, int from, int to, float x, float y) {
+		ModelEntity entity = entity(parent, prefix+"1"+suffix, x, y).getLastEntity();
+		String imgExp = "(concat s"+prefix+" s(rand i"+from+" i"+(to+1)+") s"+suffix+")";
+		parameter(entity.getComponents().get(0), "uri", imgExp);
+		return this;
+	}
+
+	public DemoBuilder sound(boolean loop, String uri){
+		return sound(getLastEntity(), loop, uri);
+	}
+	public DemoBuilder sound(ModelEntity parent, boolean loop, String uri){
+		Sound sound = makeSound(loop, uri);
+		parent.getComponents().add(sound);
+		return this;
+	}
+
+	public Sound makeSound(boolean loop, String uri) {
+		Sound sound = new Sound();
+		sound.setLoop(loop);
+		sound.setUri(uri);
+		return sound;
+	}
+
+	public Effect makeCase(Array<Effect> defaultEffects, String var, int initialValue, Array<Effect>...effectLists){
+		IfThenElseIf ifThenElseIf = new IfThenElseIf();
+		if (effectLists.length>0){
+			ifThenElseIf.setCondition(eb.variableEqualsTo(var, initialValue));
+			ifThenElseIf.getEffects().addAll(effectLists[0]);
+		}
+		for (int i=1; i<effectLists.length; i++){
+			If elseIf = new If();
+			elseIf.setCondition(eb.variableEqualsTo(var, initialValue+i));
+			elseIf.getEffects().addAll(effectLists[i]);
+			ifThenElseIf.getElseIfList().add(elseIf);
+		}
+		if (defaultEffects!=null){
+			ifThenElseIf.getElse().addAll(defaultEffects);
+		}
+		return ifThenElseIf;
+	}
+
+	public Effect makeCase(String var, Array<Effect>...effectLists){
+		return makeCase(var, 0, effectLists);
+	}
+
+	public Effect makeCase(String var, Effect...effectLists){
+		return makeCase(var, 0, effectLists);
+	}
+
+	public Effect makeCase(String var, int startIndex, Array<Effect>...effectLists){
+		return makeCase(null, var, startIndex, effectLists);
+	}
+
+	public Effect makeCase(String var, int startIndex, Effect...effectLists){
+		Array<Effect>[] effects = new Array[effectLists.length];
+		for (int i=0; i<effectLists.length; i++){
+			Effect effect = effectLists[i];
+			effects[i] = new Array<Effect>();
+			effects[i].add(effect);
+		}
+		return makeCase(null, var, startIndex, effects);
+	}
+
+	public DemoBuilder imageState(States states, String img, String... tags){
+		if (!img.toLowerCase().endsWith(".png")
+				&& !img.toLowerCase().endsWith("jpg")
+				&& !img.toLowerCase().endsWith("jpeg")) {
+			img += ".png";
+		}
+
+		State state;
+		Image frames = createImage(img);
+
+		lastComponent = frames;
+		state = new State();
+		state.setRenderer(frames);
+		states.getStates().add(state);
+
+		for (String tag:tags) {
+			state.getStates().add(tag);
+		}
+
+		return this;
+	}
+
+	public DemoBuilder imageState(ModelEntity parent, String img, String... tags) {
+		States states = null;
+		for (ModelComponent modelComponent : parent.getComponents()) {
+			if (modelComponent instanceof States) {
+				states = (States) modelComponent;
+				break;
+			}
+		}
+
+		if (states == null) {
+			lastComponent = states = new States();
+			parent.getComponents().add(states);
+		}
+
+		return imageState(states, img, tags);
+	}
+
+	public DemoBuilder imageState(String img, String... tags) {
+		return imageState(getLastEntity(), img, tags);
+	}
+
+	public DemoBuilder conditionalTouch(ModelEntity parent, String condition, Effect...effects){
+		If ifEffect = new If();
+		ifEffect.setCondition(condition);
+		for (Effect effect: effects){
+			ifEffect.getEffects().add(effect);
+		}
+		touchBehavior(parent, ifEffect);
+		return this;
+	}
+
+	public DemoBuilder conditionalTouch(String condition, Effect...effects){
+		return conditionalTouch(getLastEntity(), condition, effects);
+	}
+
+	public Effect makeEffectsGroup(Effect... effects){
+		If container = new If();
+		container.setCondition("btrue");
+		for (Effect e:effects){
+			container.getEffects().add(e);
+		}
+		return container;
+	}
+
+	public Effect makeRandomEffect(float probability, Effect... effects){
+		int value = (int) (probability*100);
+		String tmpVar = "___randomVar";
+		ChangeVar initLocalVar = this.makeChangeVar(tmpVar, "(rand i1 i101)", ChangeVar.Context.LOCAL);
+		Array<Effect>array = new Array<Effect>();
+		for (Effect effect: effects){
+			array.add(effect);
+		}
+		return makeEffectsGroup(initLocalVar, makeIfElse(eb.variableLowerThan(tmpVar, value), array, new Array<Effect>()));
+	}
+
+	public Frame makeFrame(float duration, String uri){
+		Frame f = new Frame();
+		f.setRenderer(createImage(uri));
+		f.setTime(duration);
+		return f;
 	}
 
 	public enum HorizontalAlign {
